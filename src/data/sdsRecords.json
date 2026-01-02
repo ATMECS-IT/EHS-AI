@@ -218,7 +218,7 @@
     "ghsRationale": "The SDS clearly confirms no physical, health, or environmental hazards meeting GHS classification thresholds. Toxicological data show: No skin or eye irritation classification, No sensitization, No acute or chronic toxicity triggers. The very high flash point (240°C) excludes flammable liquid classification. No hazardous ingredients are present at reportable concentrations under GHS criteria.",
     "dgRationale": "The product is: Non-flammable, Non-toxic for transport, Non-reactive, Not environmentally hazardous. Transport regulations (DOT, IMDG, IATA, TDG) explicitly state \"Not regulated\", meaning no DG class, UN number, or packing group applies.",
     "ghsPictograms": [],
-    "sdsSheetUrl": "/public/sds sheets/MSDS3.pdf",
+    "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
     "status": "Approved",
     "feedback": "",
     "sections": {
@@ -317,7 +317,7 @@
       "GHS08",
       "GHS07"
     ],
-    "sdsSheetUrl": "/public/sds sheets/WrK-120B.pdf", 
+    "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
     "status": "Pending Review",
     "feedback": "",
     "sections": {
@@ -667,7 +667,7 @@
       "GHS08",
       "GHS07"
     ],
-    "sdsSheetUrl": "/public/sds sheets/WrK-120B.pdf", 
+    "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
     "status": "Approved",
     "feedback": "",
     "sections": {
@@ -991,7 +991,7 @@
     "ghsRationale": "The SDS clearly confirms no physical, health, or environmental hazards meeting GHS classification thresholds. Toxicological data show: No skin or eye irritation classification, No sensitization, No acute or chronic toxicity triggers. The very high flash point (240°C) excludes flammable liquid classification. No hazardous ingredients are present at reportable concentrations under GHS criteria.",
     "dgRationale": "The product is: Non-flammable, Non-toxic for transport, Non-reactive, Not environmentally hazardous. Transport regulations (DOT, IMDG, IATA, TDG) explicitly state \"Not regulated\", meaning no DG class, UN number, or packing group applies.",
     "ghsPictograms": [],
-    "sdsSheetUrl": "/public/sds sheets/MSDS3.pdf",
+    "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
     "status": "Approved",
     "feedback": "",
     "sections": {
@@ -1299,7 +1299,7 @@
       "GHS08",
       "GHS07"
     ],
-    "sdsSheetUrl": "/public/sds sheets/WrK-120B.pdf", 
+    "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
     "status": "Approved",
     "feedback": "",
     "sections": {
@@ -1623,7 +1623,7 @@
     "ghsRationale": "The SDS clearly confirms no physical, health, or environmental hazards meeting GHS classification thresholds. Toxicological data show: No skin or eye irritation classification, No sensitization, No acute or chronic toxicity triggers. The very high flash point (240°C) excludes flammable liquid classification. No hazardous ingredients are present at reportable concentrations under GHS criteria.",
     "dgRationale": "The product is: Non-flammable, Non-toxic for transport, Non-reactive, Not environmentally hazardous. Transport regulations (DOT, IMDG, IATA, TDG) explicitly state \"Not regulated\", meaning no DG class, UN number, or packing group applies.",
     "ghsPictograms": [],
-    "sdsSheetUrl": "/public/sds sheets/MSDS3.pdf",
+    "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
     "status": "Approved",
     "feedback": "",
     "sections": {
@@ -1931,7 +1931,7 @@
       "GHS08",
       "GHS07"
     ],
-    "sdsSheetUrl": "/public/sds sheets/WrK-120B.pdf", 
+    "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
     "status": "Approved",
     "feedback": "",
     "sections": {
@@ -2255,7 +2255,7 @@
     "ghsRationale": "The SDS clearly confirms no physical, health, or environmental hazards meeting GHS classification thresholds. Toxicological data show: No skin or eye irritation classification, No sensitization, No acute or chronic toxicity triggers. The very high flash point (240°C) excludes flammable liquid classification. No hazardous ingredients are present at reportable concentrations under GHS criteria.",
     "dgRationale": "The product is: Non-flammable, Non-toxic for transport, Non-reactive, Not environmentally hazardous. Transport regulations (DOT, IMDG, IATA, TDG) explicitly state \"Not regulated\", meaning no DG class, UN number, or packing group applies.",
     "ghsPictograms": [],
-    "sdsSheetUrl": "/public/sds sheets/MSDS3.pdf",
+    "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
     "status": "Rejected",
     "feedback": "",
     "sections": {

@@ -1650,7 +1650,7 @@ const RawMaterials = () => {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Create Raw Material
+                Manual Raw Material
               </button>
             </div>
 
@@ -2242,7 +2242,7 @@ const RawMaterials = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
-        title="Create Raw Material"
+        title="Manual Raw Material"
         size="md"
       >
         <div className="space-y-4">

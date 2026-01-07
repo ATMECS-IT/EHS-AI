@@ -104,6 +104,8 @@ interface SDSRecord {
     };
   };
   uploadedDate: string;
+  approvedDate?: string;
+  rejectedDate?: string;
 }
 
 const RawMaterials = () => {
@@ -290,9 +292,10 @@ const RawMaterials = () => {
 
   const handleApprove = (id: number, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent row click
+    const approvedDate = new Date().toISOString();
     setSdsRecords((prevRecords) =>
       prevRecords.map((record) =>
-        record.id === id ? { ...record, status: 'Approved' } : record
+        record.id === id ? { ...record, status: 'Approved', approvedDate, rejectedDate: undefined } : record
       )
     );
   };
@@ -306,12 +309,13 @@ const RawMaterials = () => {
   };
 
   const handleConfirmReject = () => {
+    const rejectedDate = new Date().toISOString();
     if (isBulkReject) {
       // Bulk reject with feedback
       setSdsRecords(prevRecords =>
         prevRecords.map(record =>
           recordsToReject.has(record.id) 
-            ? { ...record, status: 'Rejected', feedback: rejectFeedback } 
+            ? { ...record, status: 'Rejected', feedback: rejectFeedback, rejectedDate, approvedDate: undefined } 
             : record
         )
       );
@@ -323,7 +327,7 @@ const RawMaterials = () => {
       setSdsRecords(prevRecords =>
         prevRecords.map(record =>
           recordsToReject.has(record.id) 
-            ? { ...record, status: 'Rejected', feedback: rejectFeedback } 
+            ? { ...record, status: 'Rejected', feedback: rejectFeedback, rejectedDate, approvedDate: undefined } 
             : record
         )
       );
@@ -589,9 +593,10 @@ const RawMaterials = () => {
       return;
     }
     
+    const approvedDate = new Date().toISOString();
     setSdsRecords(prevRecords =>
       prevRecords.map(record =>
-        selectedRecords.has(record.id) ? { ...record, status: 'Approved', feedback: record.feedback || '' } : record
+        selectedRecords.has(record.id) ? { ...record, status: 'Approved', feedback: record.feedback || '', approvedDate, rejectedDate: undefined } : record
       )
     );
     
@@ -644,6 +649,23 @@ const RawMaterials = () => {
     {
       key: 'materialName',
       header: 'Material Name',
+      render: (record: SDSRecord) => {
+        const truncatedText = record.materialName.length > 16
+          ? `${record.materialName.substring(0, 16)}...` 
+          : record.materialName;
+        
+        const tooltipId = `material-name-${record.id}`;
+        
+        return (
+          <span
+            data-tooltip-id={tooltipId}
+            data-tooltip-content={record.materialName}
+            className="cursor-help truncate block max-w-xs"
+          >
+            {truncatedText}
+          </span>
+        );
+      },
     },
  
     {
@@ -746,14 +768,19 @@ const RawMaterials = () => {
           </div>
         `;
         
+        const truncatedText = record.aiRecommendedDGCode.length > 20 
+          ? `${record.aiRecommendedDGCode.substring(0, 20)}...` 
+          : record.aiRecommendedDGCode;
+        
         return (
           <div>
             <span
               data-tooltip-id={tooltipId}
               data-tooltip-html={tooltipContent}
-              className="cursor-help"
+              className="cursor-help truncate block max-w-xs"
+              title={record.aiRecommendedDGCode}
             >
-              {record.aiRecommendedDGCode}
+              {truncatedText}
             </span>
             <Tooltip
               id={tooltipId}
@@ -914,7 +941,7 @@ const RawMaterials = () => {
       header: 'Rationale',
       render: (record: SDSRecord) => {
         const truncatedText = record.rationaleSummary.length > 23 
-          ? `${record.rationaleSummary.substring(0, 23)}...` 
+          ? `${record.rationaleSummary.substring(0, 16)}...` 
           : record.rationaleSummary;
         
         const tooltipId = `rationale-${record.id}`;
@@ -923,7 +950,7 @@ const RawMaterials = () => {
           <div 
             className="truncate cursor-help"
             data-tooltip-id={tooltipId}
-            data-tooltip-content={record.rationaleSummary.length > 23 ? record.rationaleSummary : ''}
+            data-tooltip-content={record.rationaleSummary.length > 16 ? record.rationaleSummary : ''}
           >
             {truncatedText}
           </div>
@@ -1483,30 +1510,50 @@ const RawMaterials = () => {
         title: 'Total Classifications', 
         value: totalCount.toLocaleString(), 
         change: '+12%', 
-        icon: '📊', 
+        icon: (
+          <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        ),
+        // icon: '📊', 
         changeColor: 'text-green-600' 
+      },
+      { 
+        title: 'Pending Reviews', 
+        value: pendingCount.toLocaleString(), 
+        change: '+3%', 
+        icon: (
+          <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+        // icon: '⏳', 
+        changeColor: 'text-yellow-600' 
       },
       { 
         title: 'Approved', 
         value: approvedCount.toLocaleString(), 
         change: '+8%', 
-        icon: '✅', 
+        icon: (
+          <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+        // icon: '✅', 
         changeColor: 'text-green-600' 
       },
       { 
         title: 'Rejected', 
         value: rejectedCount.toLocaleString(), 
         change: '+5%', 
-        icon: '❌', 
+        icon: (
+          <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+        // icon: '❌', 
         changeColor: 'text-red-600' 
-      },
-      { 
-        title: 'Pending Review', 
-        value: pendingCount.toLocaleString(), 
-        change: '+3%', 
-        icon: '⏳', 
-        changeColor: 'text-yellow-600' 
-      },
+      }
     ];
   }, [sdsRecords]);
 
@@ -1609,10 +1656,10 @@ const RawMaterials = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
                 {/* <p className={`text-sm ${stat.changeColor || 'text-green-600'} mt-1`}>{stat.change}</p> */}
               </div>
-              <div className="text-4xl">{stat.icon}</div>
+              <div className="flex items-center justify-center">{stat.icon}</div>
             </div>
           </div>
         ))}
@@ -1650,7 +1697,7 @@ const RawMaterials = () => {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Manual Raw Material
+                Manual Raw Material (?)
               </button>
             </div>
 
@@ -2238,11 +2285,36 @@ const RawMaterials = () => {
         );
       })}
 
+      {/* Material Name Tooltips */}
+      {sdsRecords.map((record) => {
+        const tooltipId = `material-name-${record.id}`;
+        
+        return (
+          <Tooltip
+            key={tooltipId}
+            id={tooltipId}
+            place="top"
+            offset={30}
+            delayShow={200}
+            delayHide={0}
+            style={{
+              backgroundColor: '#1f2937',
+              color: '#fff',
+              borderRadius: '0.5rem',
+              padding: '0.5rem',
+              maxWidth: '300px',
+              fontSize: '0.875rem',
+              zIndex: 9999,
+            }}
+          />
+        );
+      })}
+
       {/* Create Raw Material Modal */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
-        title="Manual Raw Material"
+        title="Manual Raw Material (?)"
         size="md"
       >
         <div className="space-y-4">
@@ -2282,7 +2354,7 @@ const RawMaterials = () => {
               onClick={handleCreateMaterial}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
             >
-              Create
+              Pull from RDS
             </button>
           </div>
         </div>

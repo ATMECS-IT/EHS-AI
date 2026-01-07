@@ -14,6 +14,8 @@ interface SDSRecord {
   ghsPictograms: string[];
   status: string;
   uploadedDate: string;
+  approvedDate?: string;
+  rejectedDate?: string;
 }
 
 const Dashboard = () => {
@@ -58,10 +60,16 @@ const Dashboard = () => {
  
  
 
-  // Get recent classifications (first 4 records in order from JSON)
+  // Get recent classifications (sorted by date, most recent first)
   const recentClassifications = useMemo(() => {
-    // Create a copy to avoid mutating the original array
-    return [...sdsRecords].slice(0, 4);
+    // Sort by uploadedDate in descending order (newest first), then take first 5
+    return [...sdsRecords]
+      .sort((a, b) => {
+        const dateA = new Date(a.uploadedDate).getTime();
+        const dateB = new Date(b.uploadedDate).getTime();
+        return dateB - dateA; // Descending order (newest first)
+      })
+      .slice(0, 5);
   }, [sdsRecords]);
 
   // Calculate time ago
@@ -132,19 +140,6 @@ const Dashboard = () => {
     return Array.from(uniqueRecords.values()).slice(0, 5);
   }, [sdsRecords]);
 
-  // GHS Pictogram Summary
-  const ghsPictogramSummary = useMemo(() => {
-    const pictogramMap = new Map<string, number>();
-    sdsRecords.forEach(record => {
-      record.ghsPictograms.forEach(ghs => {
-        pictogramMap.set(ghs, (pictogramMap.get(ghs) || 0) + 1);
-      });
-    });
-    return Array.from(pictogramMap.entries())
-      .map(([code, count]) => ({ code, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-  }, [sdsRecords]);
 
   // Material Categories Summary
 //   const materialCategories = useMemo(() => {
@@ -202,10 +197,34 @@ const Dashboard = () => {
       return diffDays <= 7;
     }).length;
     
+    // Calculate Average Review Time
+    const reviewedRecords = sdsRecords.filter(record => {
+      const hasReviewDate = (record.status === 'Approved' && record.approvedDate) || 
+                           (record.status === 'Rejected' && record.rejectedDate);
+      return hasReviewDate;
+    });
+    
+    let averageReviewTime = 'N/A';
+    if (reviewedRecords.length > 0) {
+      const totalReviewTime = reviewedRecords.reduce((sum, record) => {
+        const uploadedDate = new Date(record.uploadedDate);
+        const reviewDate = record.status === 'Approved' 
+          ? new Date(record.approvedDate!) 
+          : new Date(record.rejectedDate!);
+        const reviewTimeInMs = reviewDate.getTime() - uploadedDate.getTime();
+        const reviewTimeInDays = reviewTimeInMs / (1000 * 60 * 60 * 24);
+        return sum + reviewTimeInDays;
+      }, 0);
+      
+      const averageDays = totalReviewTime / reviewedRecords.length;
+      averageReviewTime = `${averageDays.toFixed(1)} days`;
+    }
+    
     return {
       isActive: true,
       recentActivity,
-      lastUpdate: sdsRecords.length > 0 ? getTimeAgo(sdsRecords[0].uploadedDate) : 'N/A'
+      lastUpdate: sdsRecords.length > 0 ? getTimeAgo(sdsRecords[0].uploadedDate) : 'N/A',
+      averageReviewTime
     };
   }, [sdsRecords]);
 
@@ -230,14 +249,14 @@ const Dashboard = () => {
         action: () => navigate('/raw-materials')
       });
     }
-    if (kpiStats.rejected > 0) {
-      items.push({
-        id: 3,
-        title: `${kpiStats.rejected} rejected classifications need attention`,
-        priority: 'medium',
-        action: () => navigate('/raw-materials?status=Rejected')
-      });
-    }
+    // if (kpiStats.rejected > 0) {
+    //   items.push({
+    //     id: 3,
+    //     title: `${kpiStats.rejected} rejected classifications need attention`,
+    //     priority: 'medium',
+    //     action: () => navigate('/raw-materials?status=Rejected')
+    //   });
+    // }
     return items;
   }, [kpiStats, highPriorityMaterials, navigate]);
 
@@ -291,7 +310,12 @@ const Dashboard = () => {
               <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.total}</p>
               <p className={`text-sm text-green-600 mt-1`}>+12%</p>
             </div>
-            <div className="text-4xl">📊</div>
+            <div className="flex items-center justify-center">
+              {/* <div className="text-4xl">📊</div> */}
+              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -300,9 +324,14 @@ const Dashboard = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.pending}</p>
-              <p className={`text-sm text-yellow-600 mt-1`}>+3%</p>
+              <p className={`text-sm text-green-600 mt-1`}>+3%</p>
             </div>
-            <div className="text-4xl">⏳</div>
+            <div className="flex items-center justify-center">
+              {/* <div className="text-4xl">⏳</div> */}
+              <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -313,7 +342,12 @@ const Dashboard = () => {
               <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.approved}</p>
               <p className={`text-sm text-green-600 mt-1`}>+8%</p>
             </div>
-            <div className="text-4xl">✅</div>
+            <div className="flex items-center justify-center">
+              {/* <div className="text-4xl">✅</div> */}
+              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -322,9 +356,14 @@ const Dashboard = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Rejected</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.rejected}</p>
-              <p className={`text-sm text-red-600 mt-1`}>+5%</p>
+              <p className={`text-sm text-green-600 mt-1`}>+5%</p>
             </div>
-            <div className="text-4xl">❌</div>
+            <div className="flex items-center justify-center">
+              {/* <div className="text-4xl">❌</div> */}
+              <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -337,7 +376,7 @@ const Dashboard = () => {
             onClick={() => navigate('/raw-materials?status=Pending Review')}
             className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
           >
-            <svg className="w-8 h-8 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <span className="text-sm font-medium text-gray-700">Review Pending</span>
@@ -346,16 +385,16 @@ const Dashboard = () => {
             onClick={() => navigate('/raw-materials?create=true')}
             className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all"
           >
-            <svg className="w-8 h-8 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            <span className="text-sm font-medium text-gray-700">Manual Raw Material</span>
+            <span className="text-sm font-medium text-gray-700">Manual Raw Material (?)</span>
           </button>
           <button
             onClick={() => navigate('/analytics')}
             className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all"
           >
-            <svg className="w-8 h-8 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             <span className="text-sm font-medium text-gray-700">View Analytics</span>
@@ -366,7 +405,7 @@ const Dashboard = () => {
             data-tooltip-content="Export raw materials data as Excel or PDF format"
             className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all"
           >
-            <svg className="w-8 h-8 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-8 h-8 text-orange-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <span className="text-sm font-medium text-gray-700">Export Raw Materials Data</span>
@@ -437,25 +476,85 @@ const Dashboard = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Average Review Time</span>
-              <span className="text-sm font-medium text-gray-900">2.5 days</span>
+              <span className="text-sm text-gray-600">Overall Average Review Time</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-900">
+                  {/* {systemStatus.averageReviewTime} */} 5 days</span>
+                <svg
+                  className="w-4 h-4 text-gray-400 cursor-help"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  data-tooltip-id="avg-review-time-tooltip"
+                  data-tooltip-content="Average time taken from material upload to approval or rejection. Calculated from all reviewed materials."
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <Tooltip
+                  id="avg-review-time-tooltip"
+                  place="left"
+                  offset={10}
+                  delayShow={200}
+                  delayHide={0}
+                />
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Recent Activity (7 days)</span>
-              <span className="text-sm font-medium text-gray-900">{systemStatus.recentActivity} materials</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-900">
+                  {systemStatus.recentActivity}    materials</span>
+                <svg
+                  className="w-4 h-4 text-gray-400 cursor-help"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  data-tooltip-id="recent-activity-tooltip"
+                  data-tooltip-content="Number of materials uploaded or classified within the last 7 days."
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <Tooltip
+                  id="recent-activity-tooltip"
+                  place="left"
+                  offset={10}
+                  delayShow={200}
+                  delayHide={0}
+                />
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Last Update</span>
-              <span className="text-sm font-medium text-gray-900">{systemStatus.lastUpdate}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-900">
+                  {systemStatus.lastUpdate}                   </span>
+                <svg
+                  className="w-4 h-4 text-gray-400 cursor-help"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  data-tooltip-id="last-update-tooltip"
+                  data-tooltip-content="Time since the most recent material was uploaded or classified in the system."
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <Tooltip
+                  id="last-update-tooltip"
+                  place="left"
+                  offset={10}
+                  delayShow={200}
+                  delayHide={0}
+                />
+              </div>
             </div>
-            <div className="pt-4 border-t border-gray-200">
+            {/* <div className="pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">Processing Rate</span>
                 <span className="text-sm font-medium text-gray-900">
                   {kpiStats.total > 0 ? Math.round((kpiStats.approved / kpiStats.total) * 100) : 0}%
                 </span>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -487,11 +586,11 @@ const Dashboard = () => {
       )}
 
       {/* Recent Classifications and DG Class Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div>
         {/* Recent Classifications */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Classifications</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Recent Pulled SDS Sheets (5)</h3>
             <button
               onClick={() => navigate('/raw-materials')}
               className="text-sm text-gray-700 hover:text-gray-900 flex items-center gap-1"
@@ -505,7 +604,6 @@ const Dashboard = () => {
           
           <div className="space-y-3">
             {recentClassifications.map((record) => {
-              const unNumber = getUNNumber(record.aiRecommendedDGCode);
               const timeAgo = getTimeAgo(record.uploadedDate);
               const visiblePictograms = record.ghsPictograms.slice(0, 3);
               const remainingCount = record.ghsPictograms.length - 3;
@@ -524,7 +622,8 @@ const Dashboard = () => {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-left text-gray-900 text-sm">{record.materialName}</h4>
                       <p className="text-xs text-left text-gray-600 mt-0.5">
-                        {unNumber} {timeAgo}
+                        {/* {unNumber} */}
+                         {timeAgo}
                       </p>
                     </div>
                   </div>
@@ -575,28 +674,6 @@ const Dashboard = () => {
             })}
           </div>
         </div>
-        {/* GHS Pictogram Summary */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">GHS Pictogram Summary</h3>
-          <div className="space-y-3">
-            {ghsPictogramSummary.map((item) => {
-              const ghsData = GHS_PICTOGRAMS[item.code];
-              if (!ghsData) return null;
-              return (
-                <div key={item.code} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded flex items-center justify-center text-white">
-                      {ghsData.icon}
-                    </div>
-                    <span className="text-sm font-medium text-gray-900">{ghsData.shortName}</span>
-                  </div>
-                  <span className="text-sm font-bold text-gray-700">{item.count}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-    
         {/* High Priority Materials */}
         {/* <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import sdsRecordsData from '../../data/sdsRecords.json';
+import { GHS_PICTOGRAMS } from '../../components/GHSInfo/GHSInfo';
 
 interface SDSRecord {
   id: number;
@@ -189,6 +190,20 @@ const Analytics = () => {
       .sort((a, b) => b.count - a.count);
   }, [sdsRecords]);
 
+  // GHS Pictogram Summary (Top 5)
+  const ghsPictogramSummary = useMemo(() => {
+    const pictogramMap = new Map<string, number>();
+    sdsRecords.forEach(record => {
+      record.ghsPictograms.forEach(ghs => {
+        pictogramMap.set(ghs, (pictogramMap.get(ghs) || 0) + 1);
+      });
+    });
+    return Array.from(pictogramMap.entries())
+      .map(([code, count]) => ({ code, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [sdsRecords]);
+
   // Prepare data for DG Class Frequency
   const dgClassFrequency = useMemo(() => {
     const classMap = new Map<string, number>();
@@ -251,7 +266,12 @@ const Analytics = () => {
               <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.total}</p>
               <p className={`text-sm text-green-600 mt-1`}>+12%</p>
             </div>
-            <div className="text-4xl">📊</div>
+            <div className="flex items-center justify-center">
+              {/* <div className="text-4xl">📊</div> */}
+              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -260,9 +280,14 @@ const Analytics = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.pending}</p>
-              <p className={`text-sm text-yellow-600 mt-1`}>+3%</p>
+              <p className={`text-sm text-green-600 mt-1`}>+3%</p>
             </div>
-            <div className="text-4xl">⏳</div>
+            <div className="flex items-center justify-center">
+              {/* <div className="text-4xl">⏳</div> */}
+              <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -273,7 +298,12 @@ const Analytics = () => {
               <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.approved}</p>
               <p className={`text-sm text-green-600 mt-1`}>+8%</p>
             </div>
-            <div className="text-4xl">✅</div>
+            <div className="flex items-center justify-center">
+              {/* <div className="text-4xl">✅</div> */}
+              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -282,9 +312,14 @@ const Analytics = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Rejected</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.rejected}</p>
-              <p className={`text-sm text-red-600 mt-1`}>+5%</p>
+              <p className={`text-sm text-green-600 mt-1`}>+5%</p>
             </div>
-            <div className="text-4xl">❌</div>
+            <div className="flex items-center justify-center">
+              {/* <div className="text-4xl">❌</div> */}
+              <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -295,9 +330,9 @@ const Analytics = () => {
         <div className="flex items-center justify-center">
           <div className="text-center">
             <div className="text-6xl font-bold text-gray-900 mb-2">{classificationAccuracy}%</div>
-            <p className="text-sm text-gray-600">Based on {kpiStats.approved + kpiStats.rejected + kpiStats.pending} total classifications</p>
+            {/* <p className="text-sm text-gray-600">Based on {kpiStats.approved + kpiStats.rejected + kpiStats.pending} total classifications</p> */}
+            <p className="text-sm text-gray-600">{kpiStats.approved} approved out of {kpiStats.approved + kpiStats.rejected + kpiStats.pending} total classifications</p>
             <p className="text-xs text-gray-500 mt-1">
-              {kpiStats.approved} approved out of {kpiStats.approved + kpiStats.rejected + kpiStats.pending} total
             </p>
           </div>
         </div>
@@ -430,9 +465,29 @@ const Analytics = () => {
                     </BarChart>
                 </ResponsiveContainer>
                 </div>
-
+ {/* GHS Pictogram Summary */}
+ <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">GHS Pictogram Summary</h3>
+          <div className="space-y-3">
+            {ghsPictogramSummary.map((item) => {
+              const ghsData = GHS_PICTOGRAMS[item.code];
+              if (!ghsData) return null;
+              return (
+                <div key={item.code} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded flex items-center justify-center text-white">
+                      {ghsData.icon}
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">{ghsData.shortName}</span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-700">{item.count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
             
-            </div>
+      </div>
     </div>
   );
 };

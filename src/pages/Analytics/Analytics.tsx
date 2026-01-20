@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import sdsRecordsData from '../../data/sdsRecords.json';
+import extenderRecordsData from '../../data/extenderRecords.json';
 import { GHS_PICTOGRAMS } from '../../components/GHSInfo/GHSInfo';
 
 interface SDSRecord {
@@ -11,8 +12,12 @@ interface SDSRecord {
   aiRecommendedDGCode: string;
   rationaleSummary: string;
   ghsPictograms: string[];
-  status: string;
+  status?: string;
+  GHSStatus?: string;
+  DGStatus?: string;
   uploadedDate: string;
+  approvedDate?: string;
+  rejectedDate?: string;
   sections: {
     section9: {
       flashPoint: string;
@@ -22,6 +27,9 @@ interface SDSRecord {
 
 const Analytics = () => {
   const [sdsRecords, setSdsRecords] = useState<SDSRecord[]>([]);
+  const [extenderRecords, setExtenderRecords] = useState<SDSRecord[]>([]);
+  const [isGhsChecked, setIsGhsChecked] = useState<boolean>(true);
+  const [isDgChecked, setIsDgChecked] = useState<boolean>(true);
 
   useEffect(() => {
     // Load from localStorage if available, otherwise use JSON file
@@ -38,7 +46,91 @@ const Analytics = () => {
     }
   }, []);
 
-  // Calculate KPI stats
+  useEffect(() => {
+    // Load extenders from localStorage if available, otherwise use JSON file
+    const savedExtenders = localStorage.getItem('extenderRecords');
+    if (savedExtenders) {
+      try {
+        setExtenderRecords(JSON.parse(savedExtenders));
+      } catch (error) {
+        console.error('Error loading extender records from localStorage:', error);
+        setExtenderRecords(extenderRecordsData as SDSRecord[]);
+      }
+    } else {
+      setExtenderRecords(extenderRecordsData as SDSRecord[]);
+    }
+  }, []);
+
+  // Calculate KPI stats for cards (GHS, DG, Extenders)
+  const kpiCards = useMemo(() => {
+    const getGhsStatus = (record: SDSRecord) => record.GHSStatus || record.status || 'Pending Review';
+    const getDgStatus = (record: SDSRecord) => record.DGStatus || record.status || 'Pending Review';
+
+    const ghsTotal = sdsRecords.length;
+    const dgTotal = sdsRecords.length;
+    const extTotal = extenderRecords.length;
+
+    const ghsPending = sdsRecords.filter(r => getGhsStatus(r) === 'Pending Review').length;
+    const dgPending = sdsRecords.filter(r => getDgStatus(r) === 'Pending Review').length;
+    const extPending = extenderRecords.filter(r => r.status === 'Pending Review').length;
+
+    const ghsApproved = sdsRecords.filter(r => getGhsStatus(r) === 'Approved').length;
+    const dgApproved = sdsRecords.filter(r => getDgStatus(r) === 'Approved').length;
+    const extApproved = extenderRecords.filter(r => r.status === 'Approved').length;
+
+    const ghsRejected = sdsRecords.filter(r => getGhsStatus(r) === 'Rejected').length;
+    const dgRejected = sdsRecords.filter(r => getDgStatus(r) === 'Rejected').length;
+    const extRejected = extenderRecords.filter(r => r.status === 'Rejected').length;
+
+    return [
+      {
+        title: 'Total Classifications',
+        ghsValue: ghsTotal.toLocaleString(),
+        dgValue: dgTotal.toLocaleString(),
+        extValue: extTotal.toLocaleString(),
+        icon: (
+          <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        ),
+      },
+      {
+        title: 'Pending Reviews',
+        ghsValue: ghsPending.toLocaleString(),
+        dgValue: dgPending.toLocaleString(),
+        extValue: extPending.toLocaleString(),
+        icon: (
+          <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+      {
+        title: 'Approved',
+        ghsValue: ghsApproved.toLocaleString(),
+        dgValue: dgApproved.toLocaleString(),
+        extValue: extApproved.toLocaleString(),
+        icon: (
+          <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+      {
+        title: 'Rejected',
+        ghsValue: ghsRejected.toLocaleString(),
+        dgValue: dgRejected.toLocaleString(),
+        extValue: extRejected.toLocaleString(),
+        icon: (
+          <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+    ];
+  }, [sdsRecords, extenderRecords]);
+
+  // Calculate KPI stats (for backward compatibility with existing code)
   const kpiStats = useMemo(() => {
     const total = sdsRecords.length;
     const pending = sdsRecords.filter(record => record.status === 'Pending Review').length;
@@ -50,41 +142,180 @@ const Analytics = () => {
 
   // Prepare data for bar chart (past 6 months with approvals and rejections)
   const barChartData = useMemo(() => {
-    // Get the last 6 months from the data
-    const monthMap = new Map<string, { approved: number; rejected: number; monthName: string }>();
+    // Calculate the past 6 months from current date
+    const now = new Date();
+    const past6Months: string[] = [];
+    const monthMap = new Map<string, { 
+      ghsApproved: number; 
+      ghsRejected: number; 
+      dgApproved: number; 
+      dgRejected: number; 
+      monthName: string 
+    }>();
     
-    sdsRecords.forEach(record => {
-      const date = new Date(record.uploadedDate);
+    // Generate month keys for the past 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      
-      if (!monthMap.has(monthKey)) {
-        monthMap.set(monthKey, { approved: 0, rejected: 0, monthName });
+      past6Months.push(monthKey);
+      monthMap.set(monthKey, { ghsApproved: 0, ghsRejected: 0, dgApproved: 0, dgRejected: 0, monthName });
+    }
+    
+    // Process records and count based on approval/rejection date, not upload date
+    sdsRecords.forEach(record => {
+      // GHS status
+      if (isGhsChecked) {
+        const ghsStatus = record.GHSStatus || record.status || 'Pending Review';
+        if (ghsStatus === 'Approved' && record.approvedDate) {
+          // Use approvedDate to determine which month to count this approval
+          const approvedDate = new Date(record.approvedDate);
+          const monthKey = `${approvedDate.getFullYear()}-${String(approvedDate.getMonth() + 1).padStart(2, '0')}`;
+          
+          // Only count if this month is in the past 6 months
+          if (past6Months.includes(monthKey)) {
+            const monthData = monthMap.get(monthKey);
+            if (monthData) {
+              monthData.ghsApproved++;
+            }
+          }
+        } else if (ghsStatus === 'Rejected' && record.rejectedDate) {
+          // Use rejectedDate to determine which month to count this rejection
+          const rejectedDate = new Date(record.rejectedDate);
+          const monthKey = `${rejectedDate.getFullYear()}-${String(rejectedDate.getMonth() + 1).padStart(2, '0')}`;
+          
+          // Only count if this month is in the past 6 months
+          if (past6Months.includes(monthKey)) {
+            const monthData = monthMap.get(monthKey);
+            if (monthData) {
+              monthData.ghsRejected++;
+            }
+          }
+        }
       }
       
-      const monthData = monthMap.get(monthKey);
-      if (monthData) {
-        if (record.status === 'Approved') {
-          monthData.approved++;
-        } else if (record.status === 'Rejected') {
-          monthData.rejected++;
+      // DG status
+      if (isDgChecked) {
+        const dgStatus = record.DGStatus || record.status || 'Pending Review';
+        if (dgStatus === 'Approved' && record.approvedDate) {
+          // Use approvedDate to determine which month to count this approval
+          const approvedDate = new Date(record.approvedDate);
+          const monthKey = `${approvedDate.getFullYear()}-${String(approvedDate.getMonth() + 1).padStart(2, '0')}`;
+          
+          // Only count if this month is in the past 6 months
+          if (past6Months.includes(monthKey)) {
+            const monthData = monthMap.get(monthKey);
+            if (monthData) {
+              monthData.dgApproved++;
+            }
+          }
+        } else if (dgStatus === 'Rejected' && record.rejectedDate) {
+          // Use rejectedDate to determine which month to count this rejection
+          const rejectedDate = new Date(record.rejectedDate);
+          const monthKey = `${rejectedDate.getFullYear()}-${String(rejectedDate.getMonth() + 1).padStart(2, '0')}`;
+          
+          // Only count if this month is in the past 6 months
+          if (past6Months.includes(monthKey)) {
+            const monthData = monthMap.get(monthKey);
+            if (monthData) {
+              monthData.dgRejected++;
+            }
+          }
         }
       }
     });
     
-    // Convert to array and sort by date
-    const months = Array.from(monthMap.entries())
-      .map(([key, data]) => ({
-        month: data.monthName,
-        monthKey: key,
-        Approved: data.approved,
-        Rejected: data.rejected,
-      }))
-      .sort((a, b) => a.monthKey.localeCompare(b.monthKey))
-      .slice(-6); // Get last 6 months
+    // Convert to array in the correct order (past 6 months)
+    const months = past6Months
+      .map((key) => {
+        const data = monthMap.get(key)!;
+        const result: any = {
+          month: data.monthName,
+          monthKey: key,
+        };
+        
+        if (isGhsChecked) {
+          result['Approved - GHS'] = data.ghsApproved;
+          result['Rejected - GHS'] = data.ghsRejected;
+        }
+        
+        if (isDgChecked) {
+          result['Approved - DG'] = data.dgApproved;
+          result['Rejected - DG'] = data.dgRejected;
+        }
+        
+        return result;
+      });
     
     return months;
-  }, [sdsRecords]);
+  }, [sdsRecords, isGhsChecked, isDgChecked]);
+
+  // Prepare data for extender bar chart (past 6 months with approvals and rejections - DG only)
+  const extenderBarChartData = useMemo(() => {
+    // Calculate the past 6 months from current date
+    const now = new Date();
+    const past6Months: string[] = [];
+    const monthMap = new Map<string, { 
+      dgApproved: number; 
+      dgRejected: number; 
+      monthName: string 
+    }>();
+    
+    // Generate month keys for the past 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      past6Months.push(monthKey);
+      monthMap.set(monthKey, { dgApproved: 0, dgRejected: 0, monthName });
+    }
+    
+    // Process records and count based on approval/rejection date, not upload date
+    extenderRecords.forEach(record => {
+      // DG status (extenders only have DG, no GHS)
+      const dgStatus = record.DGStatus || record.status || 'Pending Review';
+      
+      if (dgStatus === 'Approved' && record.approvedDate) {
+        // Use approvedDate to determine which month to count this approval
+        const approvedDate = new Date(record.approvedDate);
+        const monthKey = `${approvedDate.getFullYear()}-${String(approvedDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        // Only count if this month is in the past 6 months
+        if (past6Months.includes(monthKey)) {
+          const monthData = monthMap.get(monthKey);
+          if (monthData) {
+            monthData.dgApproved++;
+          }
+        }
+      } else if (dgStatus === 'Rejected' && record.rejectedDate) {
+        // Use rejectedDate to determine which month to count this rejection
+        const rejectedDate = new Date(record.rejectedDate);
+        const monthKey = `${rejectedDate.getFullYear()}-${String(rejectedDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        // Only count if this month is in the past 6 months
+        if (past6Months.includes(monthKey)) {
+          const monthData = monthMap.get(monthKey);
+          if (monthData) {
+            monthData.dgRejected++;
+          }
+        }
+      }
+    });
+    
+    // Convert to array in the correct order (past 6 months)
+    const months = past6Months
+      .map((key) => {
+        const data = monthMap.get(key)!;
+        return {
+          month: data.monthName,
+          monthKey: key,
+          'Approved - DG': data.dgApproved,
+          'Rejected - DG': data.dgRejected,
+        };
+      });
+    
+    return months;
+  }, [extenderRecords]);
 
   // Prepare data for donut chart
   const donutChartData = useMemo(() => {
@@ -95,12 +326,31 @@ const Analytics = () => {
     ];
   }, [kpiStats]);
 
-  // Calculate Classification Accuracy (based on approval rate)
+  // Calculate Classification Accuracy for Raw Materials and Extenders
   const classificationAccuracy = useMemo(() => {
-    const totalReviewed = kpiStats.approved + kpiStats.rejected + kpiStats.pending;
-    if (totalReviewed === 0) return 0;
-    return Math.round((kpiStats.approved / totalReviewed) * 100);
-  }, [kpiStats]);
+    // Raw Materials accuracy
+    const rawTotalReviewed = sdsRecords.filter(r => r.status === 'Approved' || r.status === 'Rejected' || r.status === 'Pending Review').length;
+    const rawApproved = sdsRecords.filter(r => r.status === 'Approved').length;
+    const rawAccuracy = rawTotalReviewed > 0 ? Math.round((rawApproved / rawTotalReviewed) * 100) : 0;
+
+    // Extenders accuracy
+    const extTotalReviewed = extenderRecords.filter(r => r.status === 'Approved' || r.status === 'Rejected' || r.status === 'Pending Review').length;
+    const extApproved = extenderRecords.filter(r => r.status === 'Approved').length;
+    const extAccuracy = extTotalReviewed > 0 ? Math.round((extApproved / extTotalReviewed) * 100) : 0;
+
+    return {
+      rawMaterials: {
+        accuracy: rawAccuracy,
+        approved: rawApproved,
+        total: rawTotalReviewed
+      },
+      extenders: {
+        accuracy: extAccuracy,
+        approved: extApproved,
+        total: extTotalReviewed
+      }
+    };
+  }, [sdsRecords, extenderRecords]);
 
   // Prepare data for Flashpoint Distribution
   const flashpointDistribution = useMemo(() => {
@@ -259,81 +509,48 @@ const Analytics = () => {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Classifications</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.total}</p>
-              <p className={`text-sm text-green-600 mt-1`}>+12%</p>
-            </div>
-            <div className="flex items-center justify-center">
-              {/* <div className="text-4xl">📊</div> */}
-              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.pending}</p>
-              <p className={`text-sm text-green-600 mt-1`}>+3%</p>
-            </div>
-            <div className="flex items-center justify-center">
-              {/* <div className="text-4xl">⏳</div> */}
-              <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+        {kpiCards.map((stat) => (
+          <div
+            key={stat.title}
+            className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 text-left">{stat.title}</p>
+                <div className="mt-2 flex items-end gap-4">
+                  <div className="flex flex-col">
+                    <p className="text-3xl font-bold text-gray-900">{stat.ghsValue}</p>
+                    <span className="text-xs font-medium text-gray-500 mt-1">GHS</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-3xl font-bold text-gray-900">{stat.dgValue}</p>
+                    <span className="text-xs font-medium text-gray-500 mt-1">DG</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-3xl font-bold text-gray-900">{stat.extValue}</p>
+                    <span className="text-xs font-medium text-gray-500 mt-1">Extenders</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-center">{stat.icon}</div>
             </div>
           </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Approved</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.approved}</p>
-              <p className={`text-sm text-green-600 mt-1`}>+8%</p>
-            </div>
-            <div className="flex items-center justify-center">
-              {/* <div className="text-4xl">✅</div> */}
-              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Rejected</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.rejected}</p>
-              <p className={`text-sm text-green-600 mt-1`}>+5%</p>
-            </div>
-            <div className="flex items-center justify-center">
-              {/* <div className="text-4xl">❌</div> */}
-              <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Classification Accuracy Card */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Classification Accuracy</h3>
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center gap-12">
           <div className="text-center">
-            <div className="text-6xl font-bold text-gray-900 mb-2">{classificationAccuracy}%</div>
-            {/* <p className="text-sm text-gray-600">Based on {kpiStats.approved + kpiStats.rejected + kpiStats.pending} total classifications</p> */}
-            <p className="text-sm text-gray-600">{kpiStats.approved} approved out of {kpiStats.approved + kpiStats.rejected + kpiStats.pending} total classifications</p>
-            <p className="text-xs text-gray-500 mt-1">
-            </p>
+            <div className="text-5xl font-bold text-gray-900 mb-2">{classificationAccuracy.rawMaterials.accuracy}%</div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Raw Materials</p>
+            <p className="text-xs text-gray-500">{classificationAccuracy.rawMaterials.approved} approved out of {classificationAccuracy.rawMaterials.total} total</p>
+          </div>
+          <div className="text-center">
+            <div className="text-5xl font-bold text-gray-900 mb-2">{classificationAccuracy.extenders.accuracy}%</div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Extenders</p>
+            <p className="text-xs text-gray-500">{classificationAccuracy.extenders.approved} approved out of {classificationAccuracy.extenders.total} total</p>
           </div>
         </div>
       </div>
@@ -342,7 +559,37 @@ const Analytics = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bar Chart - Approvals and Rejections Over Past 6 Months */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Approval vs Rejection Trends</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Raw materials Approval vs Rejection Trends</h3>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer px-3 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors group">
+                <input
+                  type="checkbox"
+                  checked={isGhsChecked}
+                  onChange={(e) => {
+                    const newValue = e.target.checked;
+                    if (!newValue && !isDgChecked) { return; }
+                    setIsGhsChecked(newValue);
+                  }}
+                  className="w-4 h-4 accent-white border-2 border-white rounded focus:outline-none checked:bg-white checked:border-white group-hover:border-blue-200 transition-all cursor-pointer"
+                />
+                <span className="text-sm font-medium text-white">GHS</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer px-3 py-2 bg-green-600 rounded-md hover:bg-green-700 transition-colors group">
+                <input
+                  type="checkbox"
+                  checked={isDgChecked}
+                  onChange={(e) => {
+                    const newValue = e.target.checked;
+                    if (!newValue && !isGhsChecked) { return; }
+                    setIsDgChecked(newValue);
+                  }}
+                  className="w-4 h-4 accent-white border-2 border-white rounded focus:outline-none checked:bg-white checked:border-white group-hover:border-green-200 transition-all cursor-pointer"
+                />
+                <span className="text-sm font-medium text-white">DG</span>
+              </label>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={barChartData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -350,15 +597,48 @@ const Analytics = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="Approved" fill="#10b981" name="Approved" />
-              <Bar dataKey="Rejected" fill="#ef4444" name="Rejected" />
+              {isGhsChecked && (
+                <>
+                  <Bar dataKey="Approved - GHS" fill="#10b981" name="Approved - GHS" />
+                  <Bar dataKey="Rejected - GHS" fill="#ef4444" name="Rejected - GHS" />
+                </>
+              )}
+              {isDgChecked && (
+                <>
+                  <Bar dataKey="Approved - DG" fill="#22c55e" name="Approved - DG" />
+                  <Bar dataKey="Rejected - DG" fill="#f87171" name="Rejected - DG" />
+                </>
+              )}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Extenders Approval vs Rejection Trends Chart */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Extenders Approval vs Rejection Trends</h3>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer px-3 py-2 bg-green-600 rounded-md">
+                <span className="text-sm font-medium text-white">DG</span>
+              </label>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={extenderBarChartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="Approved - DG" fill="#22c55e" name="Approved - DG" />
+              <Bar dataKey="Rejected - DG" fill="#f87171" name="Rejected - DG" />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Donut Chart - Status Distribution */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Overall Status Distribution</h3>
+        {/* <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Overall Raw Materials Status Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -380,7 +660,7 @@ const Analytics = () => {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-        </div>
+        </div> */}
       </div>
 
       {/* Flashpoint Distribution and GHS/DG Class Frequency */}
@@ -388,7 +668,7 @@ const Analytics = () => {
  
         {/* DG Class Frequency */}
         <div className="bg-white rounded-lg shadow p-6">
-             <h3 className="text-lg font-semibold text-gray-900 mb-4">DG Class Frequency</h3>
+             <h3 className="text-lg font-semibold text-gray-900 mb-4">DG Class Frequency for Raw Materials</h3>
              <ResponsiveContainer width="100%" height={300}>
              <BarChart data={dgClassFrequency} margin={{ bottom: 50 }}>
                  <CartesianGrid strokeDasharray="3 3" />
@@ -423,7 +703,7 @@ const Analytics = () => {
 
         {/* GHS Class Frequency */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">GHS Class Frequency</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">GHS Class Frequency for Raw Materials</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={ghsFrequency} margin={{ bottom: 50 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -454,7 +734,7 @@ const Analytics = () => {
 
               {/* Flashpoint Distribution */}
               <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Flashpoint Distribution</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Flashpoint Distribution for Raw Materials</h3>
                 <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={flashpointDistribution} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" />
@@ -467,7 +747,7 @@ const Analytics = () => {
                 </div>
  {/* GHS Pictogram Summary */}
  <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">GHS Pictogram Summary</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">GHS Pictogram Summary for Raw Materials</h3>
           <div className="space-y-3">
             {ghsPictogramSummary.map((item) => {
               const ghsData = GHS_PICTOGRAMS[item.code];

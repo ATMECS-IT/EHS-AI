@@ -70,7 +70,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, menuItems, isCollapsed, setIsCol
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className={`flex items-center transition-colors ${
-              isCollapsed ? 'justify-center px-2 py-3' : 'px-6 py-3'
+              isCollapsed ? 'justify-center px-2 py-3' : 'px-3 py-3'
             } ${
               location.pathname === item.path
                 ? 'bg-gray-800 text-white'

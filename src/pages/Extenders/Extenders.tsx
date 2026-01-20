@@ -6,7 +6,7 @@ import Table from '../../components/Table/Table';
 import Modal from '../../components/Modal/Modal';
 import Accordion from '../../components/Accordion/Accordion';
 import { GHS_PICTOGRAMS, formatGHSTooltip } from '../../components/GHSInfo/GHSInfo';
-import sdsRecordsData from '../../data/sdsRecords.json';
+import extenderRecordsData from '../../data/extenderRecords.json';
 
 interface SDSRecord {
   id: number;
@@ -51,9 +51,10 @@ interface SDSRecord {
       composition: Array<{
         chemicalName: string;
         casNumber: string;
-        concentration: string;
-        ghsClassification: string[];
-        hazardStatements: string[];
+        concentration?: string;
+        percentage?: string;
+        ghsClassification?: string[];
+        hazardStatements?: string[];
       }>;
     };
     section9: {
@@ -106,9 +107,10 @@ interface SDSRecord {
   uploadedDate: string;
   approvedDate?: string;
   rejectedDate?: string;
+  hazardousWaste?: boolean;
 }
 
-const RawMaterials = () => {
+const Extenders = () => {
   const [sdsRecords, setSdsRecords] = useState<SDSRecord[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<SDSRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -150,7 +152,7 @@ const RawMaterials = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [dgClassFilter, setDgClassFilter] = useState<string>('All');
-  const [ghsFilter, setGhsFilter] = useState<string>('All');
+  // const [ghsFilter, setGhsFilter] = useState<string>('All');
   
   // Selection states
   const [selectedRecords, setSelectedRecords] = useState<Set<number>>(new Set());
@@ -161,16 +163,16 @@ const RawMaterials = () => {
 
   useEffect(() => {
     // Load from localStorage if available, otherwise use JSON file
-    const savedRecords = localStorage.getItem('sdsRecords');
+    const savedRecords = localStorage.getItem('extenderRecords');
     if (savedRecords) {
       try {
         setSdsRecords(JSON.parse(savedRecords));
       } catch (error) {
         console.error('Error loading from localStorage:', error);
-        setSdsRecords(sdsRecordsData as SDSRecord[]);
+        setSdsRecords(extenderRecordsData as SDSRecord[]);
       }
     } else {
-      setSdsRecords(sdsRecordsData as SDSRecord[]);
+      setSdsRecords(extenderRecordsData as SDSRecord[]);
     }
   }, []);
 
@@ -184,16 +186,31 @@ const RawMaterials = () => {
     }
   }, [location.search, navigate]);
 
+  // Check for status query parameter and set status filter
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const statusParam = searchParams.get('status');
+    if (statusParam) {
+      // Set the status filter (the value in Extenders is just the status without "- DG")
+      setStatusFilter(statusParam);
+      // Remove the query parameter from URL after setting the filter
+      const newSearchParams = new URLSearchParams(location.search);
+      newSearchParams.delete('status');
+      const newSearch = newSearchParams.toString();
+      navigate(`/extenders-dg${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+    }
+  }, [location.search, navigate]);
+
   // Save to localStorage and sync to JSON file whenever records change
   useEffect(() => {
     if (sdsRecords.length > 0) {
-      localStorage.setItem('sdsRecords', JSON.stringify(sdsRecords));
-      localStorage.setItem('sdsRecordsLastUpdated', new Date().toISOString());
+      localStorage.setItem('extenderRecords', JSON.stringify(sdsRecords));
+      localStorage.setItem('extenderRecordsLastUpdated', new Date().toISOString());
       
       // Try to sync to JSON file via API (if server is running)
       const syncToFile = async () => {
         try {
-          const response = await fetch('http://localhost:3001/api/save-sds-records', {
+          const response = await fetch('http://localhost:3001/api/save-extender-records', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -365,11 +382,11 @@ const RawMaterials = () => {
     setSearchTerm('');
     setStatusFilter('All');
     setDgClassFilter('All');
-    setGhsFilter('All');
+    // setGhsFilter('All');
   };
 
   // Check if any filters are active
-  const hasActiveFilters = searchTerm !== '' || statusFilter !== 'All' || dgClassFilter !== 'All' || ghsFilter !== 'All';
+  const hasActiveFilters = searchTerm !== '' || statusFilter !== 'All' || dgClassFilter !== 'All';
 
   const handleCreateMaterial = () => {
     // Validate empty fields
@@ -432,7 +449,7 @@ const RawMaterials = () => {
       ghsRationale: "Ethanol's low flash point (~13 °C) and ability to form explosive vapor-air mixtures clearly meet the criteria for Flammable Liquid Category 2 (H225). The SDS assigns Carcinogenicity Category 1A (H350) based on regulatory listings (e.g., IARC Group 1 references), which triggers the GHS08 health hazard pictogram. Eye exposure data supports Eye Irritation Category 2A (H319). These combined hazards justify the \"Danger\" signal word and multiple pictograms.",
       dgRationale: 'Under UN Model Regulations, liquids with flash point < 23 °C and sustained flammable vapor behavior are classified as Class 3 Flammable Liquids. Ethanol therefore receives UN 1170, Class 3, Packing Group II (medium danger). This classification is mandatory across road, sea, and air transport, regardless of laboratory or commercial use.',
       ghsPictograms: ['GHS02', 'GHS08', 'GHS07'],
-      sdsSheetUrl: '/public/sds sheets/WrK-120B.pdf',
+      sdsSheetUrl: '/public/extenders/WrK-120B.pdf',
       status: 'Pending Review',
       feedback: '',
       sections: {
@@ -810,138 +827,155 @@ const RawMaterials = () => {
       },
     },
     {
-      key: 'ghs',
-      header: 'GHS Classification',
+      key: 'hazardousWaste',
+      header: 'Hazardous Waste',
       render: (record: SDSRecord) => {
-        // Use ghsPictograms directly from the record
-        const pictogramArray = record.ghsPictograms || [];
-
-        // Get classification from section2 if available (same for all pictograms in this record)
-        const section2 = record.sections?.section2;
-        const classification = section2?.classification || 'N/A';
-        
+        // Get hazardousWaste from the record (from extenderRecords.json)
+        const isHazardous = record.hazardousWaste ?? false;
         return (
-          <div className="flex gap-1 flex-wrap">
-            {pictogramArray.length > 0 ? (
-              <>
-                {pictogramArray.map((ghsCode) => {
-                  const ghsData = GHS_PICTOGRAMS[ghsCode];
-                  if (!ghsData) return null;
-                  
-                  // Extract H-codes from hazard statements
-                 // const hCodes = ghsData.hazardStatements.map(h => h.split(':')[0]).join(', ');
-                  
-                  // Extract P-codes from precautionary statements
-                //   const pCodes = ghsData.precautionaryStatements.map(p => {
-                //     const match = p.match(/^P\d+(?:\+\d+)?/);
-                //     return match ? match[0] : '';
-                //   }).filter(Boolean).join(', ');
-                  
-                  const tooltipId = `ghs-${record.id}-${ghsCode}`;
-                  // Create detailed HTML tooltip content
-                //   <tr>
-                //            <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Hazard Codes (H):</td>
-                //            <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 360px; color: #1f2937;">${hCodes || 'N/A'}</td>
-                //          </tr>
-                //          <tr>
-                //            <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Precautionary Codes (P):</td>
-                //            <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 360px; color: #1f2937;">${pCodes || 'N/A'}</td>
-                //          </tr>
-                  const tooltipContent = `
-                    <div style="text-align: left;font-size: 0.875rem; white-space: normal; background-color: #ffffff; color: #1f2937; width: 650px;">
-                      <table style="border-collapse: collapse; width: 95%; table-layout: fixed; color: #1f2937;">
-                        <tr>
-                          <td width="30%" style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">GHS Code:</td>
-                          <td width="70%" style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.code}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Name:</td>
-                          <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.name}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Category/Classification:</td>
-                          <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${classification}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Description:</td>
-                          <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.description}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Signal Word:</td>
-                          <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.signalWord}</td>
-                        </tr>
-                        
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Hazard Statements:</td>
-                          <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.hazardStatements.join('<br>')}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; white-space: nowrap; vertical-align: top; color: #1f2937;">Precautionary Statements:</td>
-                          <td style="padding: 4px 8px; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.precautionaryStatements.join('<br>')}</td>
-                        </tr>
-                      </table>
-                    </div>
-                  `;
-                  
-                  return (
-                    <span
-                      key={ghsCode}
-                      data-tooltip-id={tooltipId}
-                      data-tooltip-html={tooltipContent}
-                      className="text-xl cursor-help inline-block"
-                      style={{ lineHeight: 1 }}
-                    >
-                      {ghsData.icon}
-                    </span>
-                  );
-                })}
-                {/* {pictogramArray.map((ghsCode) => {
-                  const ghsData = GHS_PICTOGRAMS[ghsCode];
-                  if (!ghsData) return null;
-                  
-                  const tooltipId = `ghs-${record.id}-${ghsCode}`;
-                  
-                  return (  
-                    <Tooltip
-                      key={`tooltip-${tooltipId}`}
-                      id={tooltipId}
-                      place="top"
-                      offset={10}
-                      delayShow={200}
-                      delayHide={0}
-                      float={false}
-                      opacity={1}
-                      style={{
-                        backgroundColor: '#ffffff',
-                        opacity: 1,
-                        color: '#1f2937',
-                        borderRadius: '0.5rem',
-                        padding: '1rem',
-                        maxWidth: '520px',
-                        fontSize: '0.875rem',
-                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                        zIndex: 9999,
-                        border: '1px solid #e5e7eb',
-                        whiteSpace: 'normal',
-                        wordBreak: 'break-word',
-                      }}
-                    />
-                  );
-                })} */}
-              </>
-            ) : (
-              <span className="text-xs text-gray-400">N/A</span>
-            )}
-          </div>
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            isHazardous 
+              ? 'bg-green-100 text-green-800 border border-green-200' 
+              : 'bg-red-100 text-red-800 border border-red-200'
+          }`}>
+            {isHazardous ? 'Yes' : 'No'}
+          </span>
         );
       },
     },
+    // {
+    //   key: 'ghs',
+    //   header: 'GHS Classification',
+    //   render: (record: SDSRecord) => {
+    //     // Use ghsPictograms directly from the record
+    //     const pictogramArray = record.ghsPictograms || [];
+
+    //     // Get classification from section2 if available (same for all pictograms in this record)
+    //     const section2 = record.sections?.section2;
+    //     const classification = section2?.classification || 'N/A';
+        
+    //     return (
+    //       <div className="flex gap-1 flex-wrap">
+    //         {pictogramArray.length > 0 ? (
+    //           <>
+    //             {pictogramArray.map((ghsCode) => {
+    //               const ghsData = GHS_PICTOGRAMS[ghsCode];
+    //               if (!ghsData) return null;
+                  
+    //               // Extract H-codes from hazard statements
+    //              // const hCodes = ghsData.hazardStatements.map(h => h.split(':')[0]).join(', ');
+                  
+    //               // Extract P-codes from precautionary statements
+    //             //   const pCodes = ghsData.precautionaryStatements.map(p => {
+    //             //     const match = p.match(/^P\d+(?:\+\d+)?/);
+    //             //     return match ? match[0] : '';
+    //             //   }).filter(Boolean).join(', ');
+                  
+    //               const tooltipId = `ghs-${record.id}-${ghsCode}`;
+    //               // Create detailed HTML tooltip content
+    //             //   <tr>
+    //             //            <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Hazard Codes (H):</td>
+    //             //            <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 360px; color: #1f2937;">${hCodes || 'N/A'}</td>
+    //             //          </tr>
+    //             //          <tr>
+    //             //            <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Precautionary Codes (P):</td>
+    //             //            <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 360px; color: #1f2937;">${pCodes || 'N/A'}</td>
+    //             //          </tr>
+    //               const tooltipContent = `
+    //                 <div style="text-align: left;font-size: 0.875rem; white-space: normal; background-color: #ffffff; color: #1f2937; width: 650px;">
+    //                   <table style="border-collapse: collapse; width: 95%; table-layout: fixed; color: #1f2937;">
+    //                     <tr>
+    //                       <td width="30%" style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">GHS Code:</td>
+    //                       <td width="70%" style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.code}</td>
+    //                     </tr>
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Name:</td>
+    //                       <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.name}</td>
+    //                     </tr>
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Category/Classification:</td>
+    //                       <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${classification}</td>
+    //                     </tr>
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Description:</td>
+    //                       <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.description}</td>
+    //                     </tr>
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Signal Word:</td>
+    //                       <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.signalWord}</td>
+    //                     </tr>
+                        
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Hazard Statements:</td>
+    //                       <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.hazardStatements.join('<br>')}</td>
+    //                     </tr>
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; white-space: nowrap; vertical-align: top; color: #1f2937;">Precautionary Statements:</td>
+    //                       <td style="padding: 4px 8px; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.precautionaryStatements.join('<br>')}</td>
+    //                     </tr>
+    //                   </table>
+    //                 </div>
+    //               `;
+                  
+    //               return (
+    //                 <span
+    //                   key={ghsCode}
+    //                   data-tooltip-id={tooltipId}
+    //                   data-tooltip-html={tooltipContent}
+    //                   className="text-xl cursor-help inline-block"
+    //                   style={{ lineHeight: 1 }}
+    //                 >
+    //                   {ghsData.icon}
+    //                 </span>
+    //               );
+    //             })}
+    //             {/* {pictogramArray.map((ghsCode) => {
+    //               const ghsData = GHS_PICTOGRAMS[ghsCode];
+    //               if (!ghsData) return null;
+                  
+    //               const tooltipId = `ghs-${record.id}-${ghsCode}`;
+                  
+    //               return (  
+    //                 <Tooltip
+    //                   key={`tooltip-${tooltipId}`}
+    //                   id={tooltipId}
+    //                   place="top"
+    //                   offset={10}
+    //                   delayShow={200}
+    //                   delayHide={0}
+    //                   float={false}
+    //                   opacity={1}
+    //                   style={{
+    //                     backgroundColor: '#ffffff',
+    //                     opacity: 1,
+    //                     color: '#1f2937',
+    //                     borderRadius: '0.5rem',
+    //                     padding: '1rem',
+    //                     maxWidth: '520px',
+    //                     fontSize: '0.875rem',
+    //                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    //                     zIndex: 9999,
+    //                     border: '1px solid #e5e7eb',
+    //                     whiteSpace: 'normal',
+    //                     wordBreak: 'break-word',
+    //                   }}
+    //                 />
+    //               );
+    //             })} */}
+    //           </>
+    //         ) : (
+    //           <span className="text-xs text-gray-400">N/A</span>
+    //         )}
+    //       </div>
+    //     );
+    //   },
+    // },
     {
       key: 'rationaleSummary',
       header: 'Rationale',
       render: (record: SDSRecord) => {
-        const truncatedText = record.rationaleSummary.length > 23 
-          ? `${record.rationaleSummary.substring(0, 16)}...` 
+        const truncatedText = record.rationaleSummary.length > 25 
+          ? `${record.rationaleSummary.substring(0, 25)}...` 
           : record.rationaleSummary;
         
         const tooltipId = `rationale-${record.id}`;
@@ -950,7 +984,7 @@ const RawMaterials = () => {
           <div 
             className="truncate cursor-help"
             data-tooltip-id={tooltipId}
-            data-tooltip-content={record.rationaleSummary.length > 16 ? record.rationaleSummary : ''}
+            data-tooltip-content={record.rationaleSummary.length > 25 ? record.rationaleSummary : ''}
           >
             {truncatedText}
           </div>
@@ -1030,7 +1064,7 @@ const RawMaterials = () => {
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            <span>Approve</span>
+            <span>Approve - DG</span>
           </button>
           <button
             onClick={(e) => handleReject(record.id, e)}
@@ -1054,7 +1088,7 @@ const RawMaterials = () => {
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-            <span>Reject</span>
+            <span>Reject - DG</span>
           </button>
         </div>
       ),
@@ -1184,7 +1218,7 @@ const RawMaterials = () => {
           <p className="text-sm text-gray-800 leading-relaxed">{section.description}</p>
         </div>
       )}
-      {section.composition.length > 0 ? (
+      {section.composition && section.composition.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gradient-to-r from-gray-100 to-gray-200">
@@ -1211,23 +1245,31 @@ const RawMaterials = () => {
                 <tr key={idx} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{comp.chemicalName}</td>
                   <td className="px-6 py-4 text-sm text-gray-800 font-mono">{comp.casNumber}</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">{comp.concentration}</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">{comp.concentration || (comp as any).percentage || 'N/A'}</td>
                   <td className="px-6 py-4 text-sm text-gray-800">
                     <div className="flex flex-wrap gap-1">
-                      {comp.ghsClassification.map((cls, i) => (
-                        <span key={i} className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">
-                          {cls}
-                        </span>
-                      ))}
+                      {comp.ghsClassification && comp.ghsClassification.length > 0 ? (
+                        comp.ghsClassification.map((cls, i) => (
+                          <span key={i} className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">
+                            {cls}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-400">N/A</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-800">
                     <div className="flex flex-wrap gap-1">
-                      {comp.hazardStatements.map((stmt, i) => (
-                        <span key={i} className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-mono">
-                          {stmt}
-                        </span>
-                      ))}
+                      {comp.hazardStatements && comp.hazardStatements.length > 0 ? (
+                        comp.hazardStatements.map((stmt, i) => (
+                          <span key={i} className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-mono">
+                            {stmt}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-400">N/A</span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1507,7 +1549,7 @@ const RawMaterials = () => {
 
     return [
       { 
-        title: 'Total Classifications', 
+        title: 'Total Extenders/Sub-Phases', 
         value: totalCount.toLocaleString(), 
         change: '+12%', 
         icon: (
@@ -1571,15 +1613,15 @@ const RawMaterials = () => {
   }, [sdsRecords]);
 
   // Extract unique GHS codes from records
-  const ghsCodes = useMemo(() => {
-    const codes = new Set<string>();
-    sdsRecords.forEach(record => {
-      record.ghsPictograms.forEach(code => {
-        codes.add(code);
-      });
-    });
-    return ['All', ...Array.from(codes).sort()];
-  }, [sdsRecords]);
+  // const ghsCodes = useMemo(() => {
+  //   const codes = new Set<string>();
+  //   sdsRecords.forEach(record => {
+  //     record.ghsPictograms.forEach(code => {
+  //       codes.add(code);
+  //     });
+  //   });
+  //   return ['All', ...Array.from(codes).sort()];
+  // }, [sdsRecords]);
 
   // Filter records based on search term, status, and DG class
   const filteredRecords = useMemo(() => {
@@ -1612,15 +1654,15 @@ const RawMaterials = () => {
       }
       
       // GHS filter
-      if (ghsFilter !== 'All') {
-        if (!record.ghsPictograms.includes(ghsFilter)) {
-          return false;
-        }
-      }
+      // if (ghsFilter !== 'All') {
+      //   if (!record.ghsPictograms.includes(ghsFilter)) {
+      //     return false;
+      //   }
+      // }
       
       return true;
     });
-  }, [sdsRecords, searchTerm, statusFilter, dgClassFilter, ghsFilter]);
+  }, [sdsRecords, searchTerm, statusFilter, dgClassFilter]);
 
   // Paginate filtered records
   const paginatedRecords = useMemo(() => {
@@ -1683,7 +1725,7 @@ const RawMaterials = () => {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-lg text-left font-semibold text-gray-900">Raw Materials</h2>
+                <h2 className="text-lg text-left font-semibold text-gray-900">Extenders/Sub-Phases - DG</h2>
                 <p className="text-sm text-left text-gray-600 mt-1">
                   Manage and classify Safety Data Sheets.
                 </p>
@@ -1750,14 +1792,14 @@ const RawMaterials = () => {
                     className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="All">All</option>
-                    <option value="Pending Review">Pending Review</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Rejected">Rejected</option>
+                    <option value="Pending Review">Pending Review - DG</option>
+                    <option value="Approved">Approved - DG</option>
+                    <option value="Rejected">Rejected - DG</option>
                   </select>
                 </div>
 
                 {/* DG Class Filter */}
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   <label className="text-sm font-medium text-gray-700">DG Class:</label>
                   <select
                     value={dgClassFilter}
@@ -1770,10 +1812,10 @@ const RawMaterials = () => {
                       </option>
                     ))}
                   </select>
-                </div>
+                </div> */}
 
                 {/* GHS Filter */}
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   <label className="text-sm font-medium text-gray-700">GHS:</label>
                   <select
                     value={ghsFilter}
@@ -1786,13 +1828,13 @@ const RawMaterials = () => {
                       </option>
                     ))}
                   </select>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
 
           {/* Results Summary */}
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 text-right mt-2">
             Showing {filteredRecords.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to{' '}
             {Math.min(currentPage * itemsPerPage, filteredRecords.length)} of {filteredRecords.length} results
           </div>
@@ -1981,6 +2023,16 @@ const RawMaterials = () => {
                     <p className="text-base font-semibold text-gray-900 font-mono">{selectedRecord.sdsNumber}</p>
                   </div>
                 )}
+                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Hazardous Waste</p>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                    selectedRecord.hazardousWaste 
+                      ? 'bg-green-100 text-green-800 border border-green-200' 
+                      : 'bg-red-100 text-red-800 border border-red-200'
+                  }`}>
+                    {selectedRecord.hazardousWaste ? 'Yes' : 'No'}
+                  </span>
+                </div>
                 {selectedRecord.status && (
                   <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Status</p>
@@ -2220,7 +2272,7 @@ const RawMaterials = () => {
       </Modal>
 
       {/* GHS Tooltips */}
-      {sdsRecords.map((record) => {
+      {/* {sdsRecords.map((record) => {
         // Use ghsPictograms directly from the record
         const pictogramArray = record.ghsPictograms || [];
 
@@ -2255,7 +2307,7 @@ const RawMaterials = () => {
             />
           );
         });
-      })}
+      })} */}
 
       {/* Rationale Tooltips */}
       {sdsRecords.map((record) => {
@@ -2408,5 +2460,5 @@ const RawMaterials = () => {
   );
 };
 
-export default RawMaterials;
+export default Extenders;
 

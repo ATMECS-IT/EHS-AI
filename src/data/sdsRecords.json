@@ -21,8 +21,10 @@
       "GHS02",
       "GHS07"
     ],
+    "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS1.pdf",
-    "status": "Pending Review",
+    "GHSStatus": "Pending Review",
+    "DGStatus": "Pending Review",
     "feedback": "",
     "sections": {
       "section2": {
@@ -125,8 +127,10 @@
     "ghsRationale": "The SDS explicitly states \"Not Applicable\" for GHS/CLP classification. Although titanium dioxide is present at high concentration, the SDS clarifies that it does not meet the respirable particle criteria (≤10 μm at ≥1%), which is the trigger for TiO₂ carcinogenic classification under EU CLP. Toxicological data indicate: No skin corrosion or serious eye damage, No sensitization, No acute toxicity classification thresholds met. The EUH212 statement is precautionary and applies only if dust is generated, not under normal handling conditions.",
     "dgRationale": "The material is: Non-flammable, Non-reactive, Non-toxic for transport purposes, Solid powder with no DG hazard classes. No UN number, hazard class, or packing group is assigned under IMDG, IATA, ADR, RID, or ADN. Environmental hazard criteria are not met for DG transport.",
     "ghsPictograms": [],
+    "hazardousWaste": false,   
     "sdsSheetUrl": "/public/sds sheets/MSDS2.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -218,8 +222,10 @@
     "ghsRationale": "The SDS clearly confirms no physical, health, or environmental hazards meeting GHS classification thresholds. Toxicological data show: No skin or eye irritation classification, No sensitization, No acute or chronic toxicity triggers. The very high flash point (240°C) excludes flammable liquid classification. No hazardous ingredients are present at reportable concentrations under GHS criteria.",
     "dgRationale": "The product is: Non-flammable, Non-toxic for transport, Non-reactive, Not environmentally hazardous. Transport regulations (DOT, IMDG, IATA, TDG) explicitly state \"Not regulated\", meaning no DG class, UN number, or packing group applies.",
     "ghsPictograms": [],
+    "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -317,8 +323,10 @@
       "GHS08",
       "GHS07"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
-    "status": "Pending Review",
+    "GHSStatus": "Pending Review",
+    "DGStatus": "Pending Review",
     "feedback": "",
     "sections": {
       "section2": {
@@ -443,8 +451,10 @@
     "ghsPictograms": [
       "GHS07"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/MSDS4.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -547,8 +557,10 @@
     "ghsPictograms": [
       "GHS02"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/001114.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -667,8 +679,10 @@
       "GHS08",
       "GHS07"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -794,8 +808,10 @@
       "GHS02",
       "GHS07"
     ],
+    "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS1.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -899,7 +915,8 @@
     "dgRationale": "The material is: Non-flammable, Non-reactive, Non-toxic for transport purposes, Solid powder with no DG hazard classes. No UN number, hazard class, or packing group is assigned under IMDG, IATA, ADR, RID, or ADN. Environmental hazard criteria are not met for DG transport.",
     "ghsPictograms": [],
     "sdsSheetUrl": "/public/sds sheets/MSDS2.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -909,6 +926,7 @@
           "EUH210",
           "EUH212"
         ],
+        "hazardousWaste": false,
         "signalWord": "Not applicable",
         "hazardStatements": "EUH210: Safety Data Sheet available on request. EUH212: Warning! Hazardous respirable dust may be formed when used. Do not breathe dust.",
         "precautionaryCodes": [],
@@ -991,8 +1009,10 @@
     "ghsRationale": "The SDS clearly confirms no physical, health, or environmental hazards meeting GHS classification thresholds. Toxicological data show: No skin or eye irritation classification, No sensitization, No acute or chronic toxicity triggers. The very high flash point (240°C) excludes flammable liquid classification. No hazardous ingredients are present at reportable concentrations under GHS criteria.",
     "dgRationale": "The product is: Non-flammable, Non-toxic for transport, Non-reactive, Not environmentally hazardous. Transport regulations (DOT, IMDG, IATA, TDG) explicitly state \"Not regulated\", meaning no DG class, UN number, or packing group applies.",
     "ghsPictograms": [],
+    "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1075,8 +1095,10 @@
     "ghsPictograms": [
       "GHS07"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/MSDS4.pdf",
-    "status": "Rejected",
+    "GHSStatus": "Rejected",
+    "DGStatus": "Rejected",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1179,8 +1201,10 @@
     "ghsPictograms": [
       "GHS02"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/001114.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1299,8 +1323,10 @@
       "GHS08",
       "GHS07"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1426,8 +1452,10 @@
       "GHS02",
       "GHS07"
     ],
+    "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS1.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1530,8 +1558,10 @@
     "ghsRationale": "The SDS explicitly states \"Not Applicable\" for GHS/CLP classification. Although titanium dioxide is present at high concentration, the SDS clarifies that it does not meet the respirable particle criteria (≤10 μm at ≥1%), which is the trigger for TiO₂ carcinogenic classification under EU CLP. Toxicological data indicate: No skin corrosion or serious eye damage, No sensitization, No acute toxicity classification thresholds met. The EUH212 statement is precautionary and applies only if dust is generated, not under normal handling conditions.",
     "dgRationale": "The material is: Non-flammable, Non-reactive, Non-toxic for transport purposes, Solid powder with no DG hazard classes. No UN number, hazard class, or packing group is assigned under IMDG, IATA, ADR, RID, or ADN. Environmental hazard criteria are not met for DG transport.",
     "ghsPictograms": [],
+    "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS2.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1623,8 +1653,10 @@
     "ghsRationale": "The SDS clearly confirms no physical, health, or environmental hazards meeting GHS classification thresholds. Toxicological data show: No skin or eye irritation classification, No sensitization, No acute or chronic toxicity triggers. The very high flash point (240°C) excludes flammable liquid classification. No hazardous ingredients are present at reportable concentrations under GHS criteria.",
     "dgRationale": "The product is: Non-flammable, Non-toxic for transport, Non-reactive, Not environmentally hazardous. Transport regulations (DOT, IMDG, IATA, TDG) explicitly state \"Not regulated\", meaning no DG class, UN number, or packing group applies.",
     "ghsPictograms": [],
+    "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1707,8 +1739,10 @@
     "ghsPictograms": [
       "GHS07"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/MSDS4.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1811,8 +1845,10 @@
     "ghsPictograms": [
       "GHS02"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/001114.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1931,8 +1967,10 @@
       "GHS08",
       "GHS07"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2058,8 +2096,10 @@
       "GHS02",
       "GHS07"
     ],
+    "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS1.pdf",
-    "status": "Rejected",
+    "GHSStatus": "Rejected",
+    "DGStatus": "Rejected",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2162,8 +2202,10 @@
     "ghsRationale": "The SDS explicitly states \"Not Applicable\" for GHS/CLP classification. Although titanium dioxide is present at high concentration, the SDS clarifies that it does not meet the respirable particle criteria (≤10 μm at ≥1%), which is the trigger for TiO₂ carcinogenic classification under EU CLP. Toxicological data indicate: No skin corrosion or serious eye damage, No sensitization, No acute toxicity classification thresholds met. The EUH212 statement is precautionary and applies only if dust is generated, not under normal handling conditions.",
     "dgRationale": "The material is: Non-flammable, Non-reactive, Non-toxic for transport purposes, Solid powder with no DG hazard classes. No UN number, hazard class, or packing group is assigned under IMDG, IATA, ADR, RID, or ADN. Environmental hazard criteria are not met for DG transport.",
     "ghsPictograms": [],
+    "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS2.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2255,8 +2297,10 @@
     "ghsRationale": "The SDS clearly confirms no physical, health, or environmental hazards meeting GHS classification thresholds. Toxicological data show: No skin or eye irritation classification, No sensitization, No acute or chronic toxicity triggers. The very high flash point (240°C) excludes flammable liquid classification. No hazardous ingredients are present at reportable concentrations under GHS criteria.",
     "dgRationale": "The product is: Non-flammable, Non-toxic for transport, Non-reactive, Not environmentally hazardous. Transport regulations (DOT, IMDG, IATA, TDG) explicitly state \"Not regulated\", meaning no DG class, UN number, or packing group applies.",
     "ghsPictograms": [],
+    "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
-    "status": "Rejected",
+    "GHSStatus": "Rejected",
+    "DGStatus": "Rejected",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2339,8 +2383,10 @@
     "ghsPictograms": [
       "GHS07"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/MSDS4.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2443,8 +2489,10 @@
     "ghsPictograms": [
       "GHS02"
     ],
+    "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/001114.pdf",
-    "status": "Approved",
+    "GHSStatus": "Approved",
+    "DGStatus": "Approved",
     "feedback": "",
     "sections": {
       "section2": {

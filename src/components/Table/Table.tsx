@@ -27,7 +27,7 @@ const Table = <T extends Record<string, any>>({
             {columns.map((column) => (
               <th
                 key={String(column.key)}
-                className="px-6 py-3 text-xs text-left font-medium text-gray-500 uppercase tracking-wider"
+                className="px-2 py-2 text-xs text-left font-medium text-gray-500 uppercase tracking-wider"
               >
                 {column.header}
               </th>
@@ -44,7 +44,7 @@ const Table = <T extends Record<string, any>>({
               } transition-colors`}
             >
               {columns.map((column) => (
-                <td key={String(column.key)} className="px-6 text-left py-4 whitespace-nowrap text-sm text-gray-900">
+                <td key={String(column.key)} className="px-2 text-left py-2 whitespace-nowrap text-sm text-gray-900">
                   {column.render ? column.render(item) : String(item[column.key] || '')}
                 </td>
               ))}

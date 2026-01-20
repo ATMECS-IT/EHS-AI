@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import sdsRecordsData from '../../data/sdsRecords.json';
+import extenderRecordsData from '../../data/extenderRecords.json';
 import { GHS_PICTOGRAMS } from '../../components/GHSInfo/GHSInfo';
 
 interface SDSRecord {
@@ -12,7 +13,9 @@ interface SDSRecord {
   aiRecommendedDGCode: string;
   rationaleSummary: string;
   ghsPictograms: string[];
-  status: string;
+  status?: string;
+  GHSStatus?: string;
+  DGStatus?: string;
   uploadedDate: string;
   approvedDate?: string;
   rejectedDate?: string;
@@ -20,6 +23,7 @@ interface SDSRecord {
 
 const Dashboard = () => {
   const [sdsRecords, setSdsRecords] = useState<SDSRecord[]>([]);
+  const [extenderRecords, setExtenderRecords] = useState<SDSRecord[]>([]);
 
   useEffect(() => {
     // Load from localStorage if available, otherwise use JSON file
@@ -45,10 +49,46 @@ const Dashboard = () => {
       }
     });
     
-    setSdsRecords(Array.from(uniqueRecords.values()));
+    const initialized = Array.from(uniqueRecords.values()).map(record => ({
+      ...record,
+      status: record.status || 'Pending Review',
+    }));
+    setSdsRecords(initialized);
   }, []);
 
-  // Calculate KPI stats
+  useEffect(() => {
+    // Load extenders from localStorage if available, otherwise use JSON file
+    const savedExtenders = localStorage.getItem('extenderRecords');
+    let records: SDSRecord[] = [];
+
+    if (savedExtenders) {
+      try {
+        records = JSON.parse(savedExtenders);
+      } catch (error) {
+        console.error('Error loading extender records from localStorage:', error);
+        records = extenderRecordsData as SDSRecord[];
+      }
+    } else {
+      records = extenderRecordsData as SDSRecord[];
+    }
+
+    // Deduplicate by ID
+    const uniqueRecords = new Map<number, SDSRecord>();
+    records.forEach(record => {
+      if (!uniqueRecords.has(record.id)) {
+        uniqueRecords.set(record.id, record);
+      }
+    });
+
+    const initialized = Array.from(uniqueRecords.values()).map(record => ({
+      ...record,
+      status: record.status || 'Pending Review',
+    }));
+
+    setExtenderRecords(initialized);
+  }, []);
+
+  // Calculate KPI stats (kept for existing usages)
   const kpiStats = useMemo(() => {
     const total = sdsRecords.length;
     const pending = sdsRecords.filter(record => record.status === 'Pending Review').length;
@@ -57,6 +97,75 @@ const Dashboard = () => {
 
     return { total, pending, approved, rejected };
   }, [sdsRecords]);
+
+  // KPI stats for cards (GHS, DG, Extenders)
+  const kpiCards = useMemo(() => {
+    const getGhsStatus = (record: SDSRecord) => (record as any).GHSStatus || record.status || 'Pending Review';
+    const getDgStatus = (record: SDSRecord) => (record as any).DGStatus || record.status || 'Pending Review';
+
+    const ghsTotal = sdsRecords.length;
+    const dgTotal = sdsRecords.length;
+    const extTotal = extenderRecords.length;
+
+    const ghsPending = sdsRecords.filter(r => getGhsStatus(r) === 'Pending Review').length;
+    const dgPending = sdsRecords.filter(r => getDgStatus(r) === 'Pending Review').length;
+    const extPending = extenderRecords.filter(r => r.status === 'Pending Review').length;
+
+    const ghsApproved = sdsRecords.filter(r => getGhsStatus(r) === 'Approved').length;
+    const dgApproved = sdsRecords.filter(r => getDgStatus(r) === 'Approved').length;
+    const extApproved = extenderRecords.filter(r => r.status === 'Approved').length;
+
+    const ghsRejected = sdsRecords.filter(r => getGhsStatus(r) === 'Rejected').length;
+    const dgRejected = sdsRecords.filter(r => getDgStatus(r) === 'Rejected').length;
+    const extRejected = extenderRecords.filter(r => r.status === 'Rejected').length;
+
+    return [
+      {
+        title: 'Total Classifications',
+        ghsValue: ghsTotal.toLocaleString(),
+        dgValue: dgTotal.toLocaleString(),
+        extValue: extTotal.toLocaleString(),
+        icon: (
+          <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        ),
+      },
+      {
+        title: 'Pending Reviews',
+        ghsValue: ghsPending.toLocaleString(),
+        dgValue: dgPending.toLocaleString(),
+        extValue: extPending.toLocaleString(),
+        icon: (
+          <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+      {
+        title: 'Approved',
+        ghsValue: ghsApproved.toLocaleString(),
+        dgValue: dgApproved.toLocaleString(),
+        extValue: extApproved.toLocaleString(),
+        icon: (
+          <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+      {
+        title: 'Rejected',
+        ghsValue: ghsRejected.toLocaleString(),
+        dgValue: dgRejected.toLocaleString(),
+        extValue: extRejected.toLocaleString(),
+        icon: (
+          <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
+      },
+    ];
+  }, [sdsRecords, extenderRecords]);
  
  
 
@@ -71,6 +180,17 @@ const Dashboard = () => {
       })
       .slice(0, 5);
   }, [sdsRecords]);
+
+  const recentExtenders = useMemo(() => {
+    // Sort by uploadedDate in descending order (newest first), then take first 5
+    return [...extenderRecords]
+      .sort((a, b) => {
+        const dateA = new Date(a.uploadedDate).getTime();
+        const dateB = new Date(b.uploadedDate).getTime();
+        return dateB - dateA; // Descending order (newest first)
+      })
+      .slice(0, 5);
+  }, [extenderRecords]);
 
   // Calculate time ago
   const getTimeAgo = (dateString: string) => {
@@ -152,28 +272,65 @@ const Dashboard = () => {
 //       .sort((a, b) => b.count - a.count);
 //   }, [sdsRecords]);
 
-  // Compliance Status
+  // Compliance Status for Raw Materials and Extenders
   const complianceStatus = useMemo(() => {
-    const total = sdsRecords.length;
-    const approved = sdsRecords.filter(r => r.status === 'Approved').length;
-    const complianceRate = total > 0 ? Math.round((approved / total) * 100) : 0;
+    // Raw Materials compliance
+    const rawTotal = sdsRecords.length;
+    const rawApproved = sdsRecords.filter(r => r.status === 'Approved').length;
+    const rawComplianceRate = rawTotal > 0 ? Math.round((rawApproved / rawTotal) * 100) : 0;
     
-    let status = 'Good';
-    let statusColor = 'text-green-600';
-    let bgColor = 'bg-green-100';
+    let rawStatus = 'Good';
+    let rawStatusColor = 'text-green-600';
+    let rawBgColor = 'bg-green-100';
     
-    if (complianceRate < 50) {
-      status = 'Critical';
-      statusColor = 'text-red-600';
-      bgColor = 'bg-red-100';
-    } else if (complianceRate < 75) {
-      status = 'Warning';
-      statusColor = 'text-yellow-600';
-      bgColor = 'bg-yellow-100';
+    if (rawComplianceRate < 50) {
+      rawStatus = 'Critical';
+      rawStatusColor = 'text-red-600';
+      rawBgColor = 'bg-red-100';
+    } else if (rawComplianceRate < 75) {
+      rawStatus = 'Warning';
+      rawStatusColor = 'text-yellow-600';
+      rawBgColor = 'bg-yellow-100';
     }
     
-    return { complianceRate, status, statusColor, bgColor };
-  }, [sdsRecords]);
+    // Extenders compliance
+    const extTotal = extenderRecords.length;
+    const extApproved = extenderRecords.filter(r => r.status === 'Approved').length;
+    const extComplianceRate = extTotal > 0 ? Math.round((extApproved / extTotal) * 100) : 0;
+    
+    let extStatus = 'Good';
+    let extStatusColor = 'text-green-600';
+    let extBgColor = 'bg-green-100';
+    
+    if (extComplianceRate < 50) {
+      extStatus = 'Critical';
+      extStatusColor = 'text-red-600';
+      extBgColor = 'bg-red-100';
+    } else if (extComplianceRate < 75) {
+      extStatus = 'Warning';
+      extStatusColor = 'text-yellow-600';
+      extBgColor = 'bg-yellow-100';
+    }
+    
+    return {
+      rawMaterials: {
+        complianceRate: rawComplianceRate,
+        status: rawStatus,
+        statusColor: rawStatusColor,
+        bgColor: rawBgColor,
+        approved: rawApproved,
+        total: rawTotal
+      },
+      extenders: {
+        complianceRate: extComplianceRate,
+        status: extStatus,
+        statusColor: extStatusColor,
+        bgColor: extBgColor,
+        approved: extApproved,
+        total: extTotal
+      }
+    };
+  }, [sdsRecords, extenderRecords]);
 
   // Quick Stats
 //   const quickStats = useMemo(() => {
@@ -303,83 +460,56 @@ const Dashboard = () => {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Classifications</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.total}</p>
-              <p className={`text-sm text-green-600 mt-1`}>+12%</p>
-            </div>
-            <div className="flex items-center justify-center">
-              {/* <div className="text-4xl">📊</div> */}
-              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.pending}</p>
-              <p className={`text-sm text-green-600 mt-1`}>+3%</p>
-            </div>
-            <div className="flex items-center justify-center">
-              {/* <div className="text-4xl">⏳</div> */}
-              <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+        {kpiCards.map((stat) => (
+          <div
+            key={stat.title}
+            className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-600 text-left">{stat.title}</p>
+                <div className="mt-2 flex items-end gap-4">
+                  <div className="flex flex-col">
+                    <p className="text-3xl font-bold text-gray-900">{stat.ghsValue}</p>
+                    <span className="text-xs font-medium text-gray-500 mt-1">GHS</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-3xl font-bold text-gray-900">{stat.dgValue}</p>
+                    <span className="text-xs font-medium text-gray-500 mt-1">DG</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-3xl font-bold text-gray-900">{stat.extValue}</p>
+                    <span className="text-xs font-medium text-gray-500 mt-1">Extenders</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-center">{stat.icon}</div>
             </div>
           </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Approved</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.approved}</p>
-              <p className={`text-sm text-green-600 mt-1`}>+8%</p>
-            </div>
-            <div className="flex items-center justify-center">
-              {/* <div className="text-4xl">✅</div> */}
-              <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Rejected</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{kpiStats.rejected}</p>
-              <p className={`text-sm text-green-600 mt-1`}>+5%</p>
-            </div>
-            <div className="flex items-center justify-center">
-              {/* <div className="text-4xl">❌</div> */}
-              <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
  
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg text-left font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <button
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
+        <button
             onClick={() => navigate('/raw-materials?status=Pending Review')}
             className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
           >
             <svg className="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <span className="text-sm font-medium text-gray-700">Review Pending</span>
+            <span className="text-sm font-medium text-gray-700">Review Pending Raw Materials</span>
+          </button>
+          <button
+            onClick={() => navigate('/extenders-dg?status=Pending Review')}
+            className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
+          >
+            <svg className="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span className="text-sm font-medium text-gray-700">Review Pending Extenders</span>
           </button>
           <button
             onClick={() => navigate('/raw-materials?create=true')}
@@ -450,22 +580,47 @@ const Dashboard = () => {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Compliance Status</h3>
           <div className="space-y-4">
-            <div className="text-center">
-              <div className="text-5xl font-bold text-gray-900 mb-2">{complianceStatus.complianceRate}%</div>
-              <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${complianceStatus.bgColor} ${complianceStatus.statusColor}`}>
-                {complianceStatus.status}
+            {/* Compliance percentages side by side */}
+            <div className="flex items-center justify-center gap-8">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-gray-900 mb-2">{complianceStatus.rawMaterials.complianceRate}%</div>
+                <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${complianceStatus.rawMaterials.bgColor} ${complianceStatus.rawMaterials.statusColor}`}>
+                  Raw Materials
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-gray-900 mb-2">{complianceStatus.extenders.complianceRate}%</div>
+                <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${complianceStatus.extenders.bgColor} ${complianceStatus.extenders.statusColor}`}>
+                  Extenders
+                </div>
               </div>
             </div>
-            <div className="pt-4 border-t border-gray-200">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600">Approved Materials</span>
-                <span className="font-medium">{kpiStats.approved} / {kpiStats.total}</span>
+            <div className="pt-4 border-t border-gray-200 space-y-4">
+              {/* Raw Materials progress bar */}
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-600">Approved Raw Materials</span>
+                  <span className="font-medium">{complianceStatus.rawMaterials.approved} / {complianceStatus.rawMaterials.total}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all"
+                    style={{ width: `${complianceStatus.rawMaterials.complianceRate}%` }}
+                  />
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-green-600 h-2 rounded-full transition-all"
-                  style={{ width: `${complianceStatus.complianceRate}%` }}
-                />
+              {/* Extenders progress bar */}
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-600">Approved Extenders</span>
+                  <span className="font-medium">{complianceStatus.extenders.approved} / {complianceStatus.extenders.total}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-purple-600 h-2 rounded-full transition-all"
+                    style={{ width: `${complianceStatus.extenders.complianceRate}%` }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -586,11 +741,11 @@ const Dashboard = () => {
       )}
 
       {/* Recent Classifications and DG Class Distribution */}
-      <div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Recent Classifications */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Pulled SDS Sheets (5)</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Recent Pulled Raw Materials (5)</h3>
             <button
               onClick={() => navigate('/raw-materials')}
               className="text-sm text-gray-700 hover:text-gray-900 flex items-center gap-1"
@@ -653,6 +808,99 @@ const Dashboard = () => {
                       )}
                     </div>
                     
+                    {/* Status Badges - GHS and DG */}
+                    <div className="flex flex-col gap-1">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        (record.GHSStatus || record.status || 'Pending Review') === 'Pending Review' 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : (record.GHSStatus || record.status || 'Pending Review') === 'Approved'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        GHS: {record.GHSStatus || record.status || 'Pending Review'}
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        (record.DGStatus || record.status || 'Pending Review') === 'Pending Review' 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : (record.DGStatus || record.status || 'Pending Review') === 'Approved'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        DG: {record.DGStatus || record.status || 'Pending Review'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent Extenders */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Recent Pulled Extenders (5)</h3>
+            <button
+              onClick={() => navigate('/extenders-dg')}
+              className="text-sm text-gray-700 hover:text-gray-900 flex items-center gap-1"
+            >
+              View all
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            {recentExtenders.map((record) => {
+              const timeAgo = getTimeAgo(record.uploadedDate);
+              const visiblePictograms = record.ghsPictograms.slice(0, 3);
+              const remainingCount = record.ghsPictograms.length - 3;
+              
+              return (
+                <div key={record.id} className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1">
+                    {/* Document Icon */}
+                    <div className="w-10 h-10 bg-purple-100 rounded flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    
+                    {/* Material Info */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-left text-gray-900 text-sm">{record.materialName}</h4>
+                      <p className="text-xs text-left text-gray-600 mt-0.5">
+                        {timeAgo}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* GHS Pictograms and Status */}
+                  <div className="flex items-center gap-2 ml-4">
+                    {/* GHS Pictograms */}
+                    <div className="flex items-center gap-1">
+                      {visiblePictograms.map((ghsCode) => {
+                        const ghsData = GHS_PICTOGRAMS[ghsCode];
+                        if (!ghsData) return null;
+                        
+                        return (
+                          <div
+                            key={ghsCode}
+                            className={`w-6 h-6  rounded flex items-center justify-center text-white text-s`}
+                            title={ghsData.name}
+                          >
+                            {ghsData.icon}
+                          </div>
+                        );
+                      })}
+                      {remainingCount > 0 && (
+                        <div className="w-6 h-6  rounded flex items-center justify-center text-gray-700 text-s font-medium">
+                          +{remainingCount}
+                        </div>
+                      )}
+                    </div>
+                    
                     {/* Status Badge */}
                     <button className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 ${
                       record.status === 'Pending Review' 
@@ -666,7 +914,7 @@ const Dashboard = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       )}
-                      {record.status}
+                      DG: {record.status}
                     </button>
                   </div>
                 </div>

@@ -31,6 +31,25 @@ const AdminLayout = () => {
       ), 
       path: '/raw-materials' 
     },
+    // { 
+    //   name: 'Raw Materials - DG', 
+    //   icon: (
+    //     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+    //     </svg>
+    //   ), 
+    //   path: '/raw-materials-dg' 
+    // },
+    
+    { 
+      name: 'Extenders/Sub-Phases', 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+        </svg>
+      ), //a grid/layers icon, distinct from the Raw Materials icon. It represents variants and related codes.
+      path: '/extenders-dg' 
+    },
     { 
       name: 'Analytics', 
       icon: (
@@ -72,6 +91,10 @@ const AdminLayout = () => {
       '/users': {
         title: 'Users',
         subtitle: 'Manage system users and their permissions.',
+      },
+      '/extenders-dg': {
+        title: 'Extenders',
+        subtitle: 'Manage and view raw materials SDS records.',
       },
     };
     return routeMap[location.pathname] || { title: 'Dashboard' };

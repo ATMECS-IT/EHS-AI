@@ -25,6 +25,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS1.pdf",
     "GHSStatus": "Pending Review",
     "DGStatus": "Pending Review",
+    "GHS Approval/Rejection Date": "",
+    "DG Approval/Rejection Date": "",
     "feedback": "",
     "sections": {
       "section2": {
@@ -108,7 +110,7 @@
         "otherInformation": "Regulatory Conclusion: GHS - Classified due to health and combustible hazards. DG - Regulated (U.S. DOT only) → bulk shipments. Not regulated → non-bulk, air, or sea transport. This dual outcome is common for fragrance and specialty chemical mixtures with moderate flash points but significant health hazards."
       }
     },
-    "uploadedDate": "2025-12-25"
+    "uploadedDate": "2026-02-05"
   },
   {
     "id": 2,
@@ -129,8 +131,10 @@
     "ghsPictograms": [],
     "hazardousWaste": false,   
     "sdsSheetUrl": "/public/sds sheets/MSDS2.pdf",
-    "GHSStatus": "Approved",
-    "DGStatus": "Approved",
+    "GHSStatus": "Pending Review",
+    "DGStatus": "Pending Review",
+    "GHS Approval/Rejection Date": "",
+    "DG Approval/Rejection Date": "",
     "feedback": "",
     "sections": {
       "section2": {
@@ -203,7 +207,7 @@
         "otherInformation": "Regulatory Conclusion: GHS/CLP - Not classified (EUH statements only). DG (All modes) - Not Dangerous Goods. Transport restrictions: None. Primary handling concern: Dust control (occupational exposure)."
       }
     },
-    "uploadedDate": "2025-12-25"
+    "uploadedDate": "2026-02-05"
   },
   {
     "id": 3,
@@ -224,8 +228,10 @@
     "ghsPictograms": [],
     "hazardousWaste": false,
     "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
-    "GHSStatus": "Approved",
-    "DGStatus": "Approved",
+    "GHSStatus": "Pending Review",
+    "DGStatus": "Pending Review",
+    "GHS Approval/Rejection Date": "",
+    "DG Approval/Rejection Date": "",
     "feedback": "",
     "sections": {
       "section2": {
@@ -286,7 +292,7 @@
         "otherInformation": "Regulatory Conclusion: DOT (US) - Not regulated. IMDG (Sea) - Not regulated. IATA (Air) - Not regulated. TDG (Canada) - Not regulated. ADR/RID / Mexico - Not regulated. Overall Status: Non-hazardous cosmetic raw material."
       }
     },
-    "uploadedDate": "2025-11-25"
+    "uploadedDate": "2026-02-05"
   },
   
   {
@@ -327,6 +333,8 @@
     "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
     "GHSStatus": "Pending Review",
     "DGStatus": "Pending Review",
+    "GHS Approval/Rejection Date": "",
+    "DG Approval/Rejection Date": "",
     "feedback": "",
     "sections": {
       "section2": {
@@ -429,7 +437,7 @@
         "otherInformation": "Kemler Code: 33. EMS: F-E, S-D. Limited Quantity (IMDG): 1 L. Passenger Aircraft Limit: 5 L. Cargo Aircraft Limit: 60 L. Emergency Contact: CHEMTREC® 1-800-424-9300. Classification is mandatory across road (DOT), sea (IMDG), and air (IATA) transport. Transport modes covered: DOT (US): UN 1170, Class 3, PG II; IMDG (Sea): UN 1170, Class 3, PG II; IATA/ICAO (Air): UN 1170, Class 3, PG II; TDG (Canada): Class 3, PG II; Mexico: Class 3, PG II."
       }
     },
-    "uploadedDate": "2025-12-24"
+    "uploadedDate": "2026-02-05"
   },
   {
     "id": 5,
@@ -455,6 +463,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS4.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2026-02-02",
+    "DG Approval/Rejection Date": "2026-02-02",
     "feedback": "",
     "sections": {
       "section2": {
@@ -525,7 +535,7 @@
         "otherInformation": "Important Transport Note: IFF states that although DOT ground shipment is non-regulated, the product may be shipped as UN 3082 to support multi-modal transport consistency (air/sea). Ground transport under DOT allows exemption; however, air and sea regulations mandate DG classification, making this product conditionally regulated depending on transport mode."
       }
     },
-    "uploadedDate": "2025-11-25"
+    "uploadedDate": "2026-02-01"
   },
   {
     "id": 6,
@@ -559,8 +569,10 @@
     ],
     "hazardousWaste": true,
     "sdsSheetUrl": "/public/sds sheets/001114.pdf",
-    "GHSStatus": "Approved",
-    "DGStatus": "Approved",
+    "GHSStatus": "Rejected",
+    "DGStatus": "Rejected",
+    "GHS Approval/Rejection Date": "2026-01-29",
+    "DG Approval/Rejection Date": "2026-01-29",
     "feedback": "",
     "sections": {
       "section2": {
@@ -643,7 +655,7 @@
         "otherInformation": "Transport Modes: DOT (US): Class 3, PG II; IMDG (Sea): Class 3, PG II; IATA/ICAO (Air): Class 3, PG II; TDG (Canada): Class 3, PG II; Mexico: Class 3, PG II. Limited Quantity: Allowed, subject to volume limits (e.g., 5 L passenger aircraft, 60 L cargo aircraft). The classification is consistent and mandatory across road, sea, and air transport."
       }
     },
-    "uploadedDate": "2025-11-25"
+    "uploadedDate": "2026-01-28"
   },
   {
     "id": 7,
@@ -683,6 +695,8 @@
     "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2026-01-22",
+    "DG Approval/Rejection Date": "2026-01-22",
     "feedback": "",
     "sections": {
       "section2": {
@@ -785,7 +799,7 @@
         "otherInformation": "Kemler Code: 33. EMS: F-E, S-D. Limited Quantity (IMDG): 1 L. Passenger Aircraft Limit: 5 L. Cargo Aircraft Limit: 60 L. Emergency Contact: CHEMTREC® 1-800-424-9300. Classification is mandatory across road (DOT), sea (IMDG), and air (IATA) transport. Transport modes covered: DOT (US): UN 1170, Class 3, PG II; IMDG (Sea): UN 1170, Class 3, PG II; IATA/ICAO (Air): UN 1170, Class 3, PG II; TDG (Canada): Class 3, PG II; Mexico: Class 3, PG II."
       }
     },
-    "uploadedDate": "2025-10-24"
+    "uploadedDate": "2026-01-21"
   },
   {
     "id": 8,
@@ -812,6 +826,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS1.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2026-01-12",
+    "DG Approval/Rejection Date": "2026-01-12",
     "feedback": "",
     "sections": {
       "section2": {
@@ -895,7 +911,7 @@
         "otherInformation": "Regulatory Conclusion: GHS - Classified due to health and combustible hazards. DG - Regulated (U.S. DOT only) → bulk shipments. Not regulated → non-bulk, air, or sea transport. This dual outcome is common for fragrance and specialty chemical mixtures with moderate flash points but significant health hazards."
       }
     },
-    "uploadedDate": "2025-10-25"
+    "uploadedDate": "2026-01-11"
   },
   {
     "id": 9,
@@ -917,6 +933,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS2.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2026-01-03",
+    "DG Approval/Rejection Date": "2026-01-03",
     "feedback": "",
     "sections": {
       "section2": {
@@ -990,7 +1008,7 @@
         "otherInformation": "Regulatory Conclusion: GHS/CLP - Not classified (EUH statements only). DG (All modes) - Not Dangerous Goods. Transport restrictions: None. Primary handling concern: Dust control (occupational exposure)."
       }
     },
-    "uploadedDate": "2025-10-25"
+    "uploadedDate": "2026-01-02"
   },
   {
     "id": 10,
@@ -1013,6 +1031,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-12-30",
+    "DG Approval/Rejection Date": "2025-12-30",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1073,7 +1093,7 @@
         "otherInformation": "Regulatory Conclusion: DOT (US) - Not regulated. IMDG (Sea) - Not regulated. IATA (Air) - Not regulated. TDG (Canada) - Not regulated. ADR/RID / Mexico - Not regulated. Overall Status: Non-hazardous cosmetic raw material."
       }
     },
-    "uploadedDate": "2025-10-25"
+    "uploadedDate": "2025-12-29"
   },
   {
     "id": 11,
@@ -1099,6 +1119,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS4.pdf",
     "GHSStatus": "Rejected",
     "DGStatus": "Rejected",
+    "GHS Approval/Rejection Date": "2025-12-25",
+    "DG Approval/Rejection Date": "2025-12-25",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1169,7 +1191,7 @@
         "otherInformation": "Important Transport Note: IFF states that although DOT ground shipment is non-regulated, the product may be shipped as UN 3082 to support multi-modal transport consistency (air/sea). Ground transport under DOT allows exemption; however, air and sea regulations mandate DG classification, making this product conditionally regulated depending on transport mode."
       }
     },
-    "uploadedDate": "2025-10-25"
+    "uploadedDate": "2025-12-24"
   },
   {
     "id": 12,
@@ -1205,6 +1227,8 @@
     "sdsSheetUrl": "/public/sds sheets/001114.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-12-20",
+    "DG Approval/Rejection Date": "2025-12-20",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1287,7 +1311,7 @@
         "otherInformation": "Transport Modes: DOT (US): Class 3, PG II; IMDG (Sea): Class 3, PG II; IATA/ICAO (Air): Class 3, PG II; TDG (Canada): Class 3, PG II; Mexico: Class 3, PG II. Limited Quantity: Allowed, subject to volume limits (e.g., 5 L passenger aircraft, 60 L cargo aircraft). The classification is consistent and mandatory across road, sea, and air transport."
       }
     },
-    "uploadedDate": "2025-09-25"
+    "uploadedDate": "2025-012-18"
   },
   {
     "id": 13,
@@ -1327,6 +1351,8 @@
     "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-12-10",
+    "DG Approval/Rejection Date": "2025-12-10",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1429,7 +1455,7 @@
         "otherInformation": "Kemler Code: 33. EMS: F-E, S-D. Limited Quantity (IMDG): 1 L. Passenger Aircraft Limit: 5 L. Cargo Aircraft Limit: 60 L. Emergency Contact: CHEMTREC® 1-800-424-9300. Classification is mandatory across road (DOT), sea (IMDG), and air (IATA) transport. Transport modes covered: DOT (US): UN 1170, Class 3, PG II; IMDG (Sea): UN 1170, Class 3, PG II; IATA/ICAO (Air): UN 1170, Class 3, PG II; TDG (Canada): Class 3, PG II; Mexico: Class 3, PG II."
       }
     },
-    "uploadedDate": "2025-09-24"
+    "uploadedDate": "2025-12-09"
   },
   {
     "id": 14,
@@ -1456,6 +1482,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS1.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-12-05",
+    "DG Approval/Rejection Date": "2025-12-05",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1539,7 +1567,7 @@
         "otherInformation": "Regulatory Conclusion: GHS - Classified due to health and combustible hazards. DG - Regulated (U.S. DOT only) → bulk shipments. Not regulated → non-bulk, air, or sea transport. This dual outcome is common for fragrance and specialty chemical mixtures with moderate flash points but significant health hazards."
       }
     },
-    "uploadedDate": "2025-08-25"
+    "uploadedDate": "2025-12-04"
   },
   {
     "id": 15,
@@ -1562,6 +1590,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS2.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-11-29",
+    "DG Approval/Rejection Date": "2025-11-29",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1634,7 +1664,7 @@
         "otherInformation": "Regulatory Conclusion: GHS/CLP - Not classified (EUH statements only). DG (All modes) - Not Dangerous Goods. Transport restrictions: None. Primary handling concern: Dust control (occupational exposure)."
       }
     },
-    "uploadedDate": "2025-08-25"
+    "uploadedDate": "2025-11-28"
   },
   {
     "id": 16,
@@ -1657,6 +1687,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-11-22",
+    "DG Approval/Rejection Date": "2025-11-22",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1717,7 +1749,7 @@
         "otherInformation": "Regulatory Conclusion: DOT (US) - Not regulated. IMDG (Sea) - Not regulated. IATA (Air) - Not regulated. TDG (Canada) - Not regulated. ADR/RID / Mexico - Not regulated. Overall Status: Non-hazardous cosmetic raw material."
       }
     },
-    "uploadedDate": "2025-08-25"
+    "uploadedDate": "2025-11-20"
   },
   {
     "id": 17,
@@ -1743,6 +1775,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS4.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-11-15",
+    "DG Approval/Rejection Date": "2025-11-15",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1813,7 +1847,7 @@
         "otherInformation": "Important Transport Note: IFF states that although DOT ground shipment is non-regulated, the product may be shipped as UN 3082 to support multi-modal transport consistency (air/sea). Ground transport under DOT allows exemption; however, air and sea regulations mandate DG classification, making this product conditionally regulated depending on transport mode."
       }
     },
-    "uploadedDate": "2025-08-25"
+    "uploadedDate": "2025-11-12"
   },
   {
       "id": 18,
@@ -1849,6 +1883,8 @@
     "sdsSheetUrl": "/public/sds sheets/001114.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-10-26",
+    "DG Approval/Rejection Date": "2025-10-26",
     "feedback": "",
     "sections": {
       "section2": {
@@ -1931,7 +1967,7 @@
         "otherInformation": "Transport Modes: DOT (US): Class 3, PG II; IMDG (Sea): Class 3, PG II; IATA/ICAO (Air): Class 3, PG II; TDG (Canada): Class 3, PG II; Mexico: Class 3, PG II. Limited Quantity: Allowed, subject to volume limits (e.g., 5 L passenger aircraft, 60 L cargo aircraft). The classification is consistent and mandatory across road, sea, and air transport."
       }
     },
-    "uploadedDate": "2025-07-25"
+    "uploadedDate": "2025-10-25"
   },
   {
     "id": 19,
@@ -1971,6 +2007,8 @@
     "sdsSheetUrl": "/public/sds sheets/WRK-120B.pdf", 
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-10-18",
+    "DG Approval/Rejection Date": "2025-10-18",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2073,7 +2111,7 @@
         "otherInformation": "Kemler Code: 33. EMS: F-E, S-D. Limited Quantity (IMDG): 1 L. Passenger Aircraft Limit: 5 L. Cargo Aircraft Limit: 60 L. Emergency Contact: CHEMTREC® 1-800-424-9300. Classification is mandatory across road (DOT), sea (IMDG), and air (IATA) transport. Transport modes covered: DOT (US): UN 1170, Class 3, PG II; IMDG (Sea): UN 1170, Class 3, PG II; IATA/ICAO (Air): UN 1170, Class 3, PG II; TDG (Canada): Class 3, PG II; Mexico: Class 3, PG II."
       }
     },
-    "uploadedDate": "2025-07-24"
+    "uploadedDate": "2025-10-14"
   },
   {
     "id": 20,
@@ -2100,6 +2138,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS1.pdf",
     "GHSStatus": "Rejected",
     "DGStatus": "Rejected",
+    "GHS Approval/Rejection Date": "2025-10-10",
+    "DG Approval/Rejection Date": "2025-10-10",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2183,7 +2223,7 @@
         "otherInformation": "Regulatory Conclusion: GHS - Classified due to health and combustible hazards. DG - Regulated (U.S. DOT only) → bulk shipments. Not regulated → non-bulk, air, or sea transport. This dual outcome is common for fragrance and specialty chemical mixtures with moderate flash points but significant health hazards."
       }
     },
-    "uploadedDate": "2025-07-25"
+    "uploadedDate": "2025-10-09"
   },
   {
     "id": 21,
@@ -2206,6 +2246,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS2.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-10-05",
+    "DG Approval/Rejection Date": "2025-10-05",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2278,7 +2320,7 @@
         "otherInformation": "Regulatory Conclusion: GHS/CLP - Not classified (EUH statements only). DG (All modes) - Not Dangerous Goods. Transport restrictions: None. Primary handling concern: Dust control (occupational exposure)."
       }
     },
-    "uploadedDate": "2025-06-25"
+    "uploadedDate": "2025-10-03"
   },
   {
     "id": 22,
@@ -2301,6 +2343,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS-3.pdf",
     "GHSStatus": "Rejected",
     "DGStatus": "Rejected",
+    "GHS Approval/Rejection Date": "2025-09-25",
+    "DG Approval/Rejection Date": "2025-09-25",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2361,7 +2405,7 @@
         "otherInformation": "Regulatory Conclusion: DOT (US) - Not regulated. IMDG (Sea) - Not regulated. IATA (Air) - Not regulated. TDG (Canada) - Not regulated. ADR/RID / Mexico - Not regulated. Overall Status: Non-hazardous cosmetic raw material."
       }
     },
-    "uploadedDate": "2025-06-25"
+    "uploadedDate": "2025-09-20"
   },
   {
     "id": 23,
@@ -2387,6 +2431,8 @@
     "sdsSheetUrl": "/public/sds sheets/MSDS4.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-09-15",
+    "DG Approval/Rejection Date": "2025-09-15",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2457,7 +2503,7 @@
         "otherInformation": "Important Transport Note: IFF states that although DOT ground shipment is non-regulated, the product may be shipped as UN 3082 to support multi-modal transport consistency (air/sea). Ground transport under DOT allows exemption; however, air and sea regulations mandate DG classification, making this product conditionally regulated depending on transport mode."
       }
     },
-    "uploadedDate": "2025-06-25"
+    "uploadedDate": "2025-09-10"
   },
   {
     "id": 24,
@@ -2493,6 +2539,8 @@
     "sdsSheetUrl": "/public/sds sheets/001114.pdf",
     "GHSStatus": "Approved",
     "DGStatus": "Approved",
+    "GHS Approval/Rejection Date": "2025-09-10",
+    "DG Approval/Rejection Date": "2025-09-10",
     "feedback": "",
     "sections": {
       "section2": {
@@ -2575,6 +2623,6 @@
         "otherInformation": "Transport Modes: DOT (US): Class 3, PG II; IMDG (Sea): Class 3, PG II; IATA/ICAO (Air): Class 3, PG II; TDG (Canada): Class 3, PG II; Mexico: Class 3, PG II. Limited Quantity: Allowed, subject to volume limits (e.g., 5 L passenger aircraft, 60 L cargo aircraft). The classification is consistent and mandatory across road, sea, and air transport."
       }
     },
-    "uploadedDate": "2025-06-25"
+    "uploadedDate": "2025-09-05"
   }
 ]

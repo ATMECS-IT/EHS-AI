@@ -17,8 +17,8 @@ interface SDSRecord {
   GHSStatus?: string;
   DGStatus?: string;
   uploadedDate: string;
-  approvedDate?: string;
-  rejectedDate?: string;
+  'GHS Approval/Rejection Date'?: string;
+  'DG Approval/Rejection Date'?: string;
 }
 
 const Dashboard = () => {
@@ -49,10 +49,15 @@ const Dashboard = () => {
       }
     });
     
-    const initialized = Array.from(uniqueRecords.values()).map(record => ({
-      ...record,
-      status: record.status || 'Pending Review',
-    }));
+    const initialized = Array.from(uniqueRecords.values()).map(record => {
+      const jsonRecord = record as any;
+      return {
+        ...record,
+        status: record.status || 'Pending Review',
+        'GHS Approval/Rejection Date': jsonRecord['GHS Approval/Rejection Date'] || undefined,
+        'DG Approval/Rejection Date': jsonRecord['DG Approval/Rejection Date'] || undefined,
+      };
+    });
     setSdsRecords(initialized);
   }, []);
 
@@ -88,14 +93,37 @@ const Dashboard = () => {
     setExtenderRecords(initialized);
   }, []);
 
-  // Calculate KPI stats (kept for existing usages)
+  // Calculate KPI stats (separate GHS and DG counts)
   const kpiStats = useMemo(() => {
     const total = sdsRecords.length;
-    const pending = sdsRecords.filter(record => record.status === 'Pending Review').length;
-    const approved = sdsRecords.filter(record => record.status === 'Approved').length;
-    const rejected = sdsRecords.filter(record => record.status === 'Rejected').length;
+    
+    // GHS stats
+    const ghsPending = sdsRecords.filter(record => (record.GHSStatus || record.status) === 'Pending Review').length;
+    const ghsApproved = sdsRecords.filter(record => (record.GHSStatus || record.status) === 'Approved').length;
+    const ghsRejected = sdsRecords.filter(record => (record.GHSStatus || record.status) === 'Rejected').length;
+    
+    // DG stats
+    const dgPending = sdsRecords.filter(record => (record.DGStatus || record.status) === 'Pending Review').length;
+    const dgApproved = sdsRecords.filter(record => (record.DGStatus || record.status) === 'Approved').length;
+    const dgRejected = sdsRecords.filter(record => (record.DGStatus || record.status) === 'Rejected').length;
+    
+    // Combined totals (for backward compatibility)
+    const pending = ghsPending + dgPending;
+    const approved = ghsApproved + dgApproved;
+    const rejected = ghsRejected + dgRejected;
 
-    return { total, pending, approved, rejected };
+    return { 
+      total, 
+      pending, 
+      approved, 
+      rejected,
+      ghsPending,
+      ghsApproved,
+      ghsRejected,
+      dgPending,
+      dgApproved,
+      dgRejected
+    };
   }, [sdsRecords]);
 
   // KPI stats for cards (GHS, DG, Extenders)
@@ -274,23 +302,41 @@ const Dashboard = () => {
 
   // Compliance Status for Raw Materials and Extenders
   const complianceStatus = useMemo(() => {
-    // Raw Materials compliance
+    // Raw Materials compliance - GHS
     const rawTotal = sdsRecords.length;
-    const rawApproved = sdsRecords.filter(r => r.status === 'Approved').length;
-    const rawComplianceRate = rawTotal > 0 ? Math.round((rawApproved / rawTotal) * 100) : 0;
+    const rawGHSApproved = sdsRecords.filter(r => (r.GHSStatus || r.status) === 'Approved').length;
+    const rawGHSComplianceRate = rawTotal > 0 ? Math.round((rawGHSApproved / rawTotal) * 100) : 0;
     
-    let rawStatus = 'Good';
-    let rawStatusColor = 'text-green-600';
-    let rawBgColor = 'bg-green-100';
+    let rawGHSStatus = 'Good';
+    let rawGHSStatusColor = 'text-green-600';
+    let rawGHSBgColor = 'bg-green-100';
     
-    if (rawComplianceRate < 50) {
-      rawStatus = 'Critical';
-      rawStatusColor = 'text-red-600';
-      rawBgColor = 'bg-red-100';
-    } else if (rawComplianceRate < 75) {
-      rawStatus = 'Warning';
-      rawStatusColor = 'text-yellow-600';
-      rawBgColor = 'bg-yellow-100';
+    if (rawGHSComplianceRate < 50) {
+      rawGHSStatus = 'Critical';
+      rawGHSStatusColor = 'text-red-600';
+      rawGHSBgColor = 'bg-red-100';
+    } else if (rawGHSComplianceRate < 75) {
+      rawGHSStatus = 'Warning';
+      rawGHSStatusColor = 'text-yellow-600';
+      rawGHSBgColor = 'bg-yellow-100';
+    }
+    
+    // Raw Materials compliance - DG
+    const rawDGApproved = sdsRecords.filter(r => (r.DGStatus || r.status) === 'Approved').length;
+    const rawDGComplianceRate = rawTotal > 0 ? Math.round((rawDGApproved / rawTotal) * 100) : 0;
+    
+    let rawDGStatus = 'Good';
+    let rawDGStatusColor = 'text-green-600';
+    let rawDGBgColor = 'bg-green-100';
+    
+    if (rawDGComplianceRate < 50) {
+      rawDGStatus = 'Critical';
+      rawDGStatusColor = 'text-red-600';
+      rawDGBgColor = 'bg-red-100';
+    } else if (rawDGComplianceRate < 75) {
+      rawDGStatus = 'Warning';
+      rawDGStatusColor = 'text-yellow-600';
+      rawDGBgColor = 'bg-yellow-100';
     }
     
     // Extenders compliance
@@ -314,12 +360,22 @@ const Dashboard = () => {
     
     return {
       rawMaterials: {
-        complianceRate: rawComplianceRate,
-        status: rawStatus,
-        statusColor: rawStatusColor,
-        bgColor: rawBgColor,
-        approved: rawApproved,
-        total: rawTotal
+        ghs: {
+          complianceRate: rawGHSComplianceRate,
+          status: rawGHSStatus,
+          statusColor: rawGHSStatusColor,
+          bgColor: rawGHSBgColor,
+          approved: rawGHSApproved,
+          total: rawTotal
+        },
+        dg: {
+          complianceRate: rawDGComplianceRate,
+          status: rawDGStatus,
+          statusColor: rawDGStatusColor,
+          bgColor: rawDGBgColor,
+          approved: rawDGApproved,
+          total: rawTotal
+        }
       },
       extenders: {
         complianceRate: extComplianceRate,
@@ -347,17 +403,28 @@ const Dashboard = () => {
 
   // System Status
   const systemStatus = useMemo(() => {
-    const recentActivity = sdsRecords.filter(r => {
+    const recentRawMaterials = sdsRecords.filter(r => {
       const date = new Date(r.uploadedDate);
       const now = new Date();
       const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
       return diffDays <= 7;
     }).length;
     
+    const recentExtenders = extenderRecords.filter(r => {
+      const date = new Date(r.uploadedDate);
+      const now = new Date();
+      const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays <= 7;
+    }).length;
+    
+    const recentActivity = recentRawMaterials + recentExtenders;
+    
     // Calculate Average Review Time
     const reviewedRecords = sdsRecords.filter(record => {
-      const hasReviewDate = (record.status === 'Approved' && record.approvedDate) || 
-                           (record.status === 'Rejected' && record.rejectedDate);
+      const ghsDate = (record as any)['GHS Approval/Rejection Date'];
+      const dgDate = (record as any)['DG Approval/Rejection Date'];
+      const hasReviewDate = (record.status === 'Approved' && (ghsDate || dgDate)) || 
+                           (record.status === 'Rejected' && (ghsDate || dgDate));
       return hasReviewDate;
     });
     
@@ -365,9 +432,11 @@ const Dashboard = () => {
     if (reviewedRecords.length > 0) {
       const totalReviewTime = reviewedRecords.reduce((sum, record) => {
         const uploadedDate = new Date(record.uploadedDate);
-        const reviewDate = record.status === 'Approved' 
-          ? new Date(record.approvedDate!) 
-          : new Date(record.rejectedDate!);
+        // Get the appropriate date based on status
+        const ghsDate = (record as any)['GHS Approval/Rejection Date'];
+        const dgDate = (record as any)['DG Approval/Rejection Date'];
+        const dateStr = ghsDate || dgDate || '';
+        const reviewDate = dateStr ? new Date(dateStr) : uploadedDate;
         const reviewTimeInMs = reviewDate.getTime() - uploadedDate.getTime();
         const reviewTimeInDays = reviewTimeInMs / (1000 * 60 * 60 * 24);
         return sum + reviewTimeInDays;
@@ -380,27 +449,42 @@ const Dashboard = () => {
     return {
       isActive: true,
       recentActivity,
+      recentRawMaterials,
+      recentExtenders,
       lastUpdate: sdsRecords.length > 0 ? getTimeAgo(sdsRecords[0].uploadedDate) : 'N/A',
       averageReviewTime
     };
-  }, [sdsRecords]);
+  }, [sdsRecords, extenderRecords]);
 
   const navigate = useNavigate();
 
   // Action Items
   const actionItems = useMemo(() => {
     const items = [];
-    if (kpiStats.pending > 0) {
+    const totalPending = kpiStats.ghsPending + kpiStats.dgPending;
+    if (totalPending > 0) {
       items.push({
         id: 1,
-        title: `${kpiStats.pending} materials pending review`,
+        title: `${totalPending} raw materials pending review (GHS: ${kpiStats.ghsPending}, DG: ${kpiStats.dgPending})`,
         priority: 'high',
         action: () => navigate('/raw-materials?status=Pending Review')
       });
     }
-    if (highPriorityMaterials.length > 0) {
+    
+    // Check for pending extenders
+    const extPending = extenderRecords.filter(r => r.status === 'Pending Review').length;
+    if (extPending > 0) {
       items.push({
         id: 2,
+        title: `${extPending} extenders/subphases pending review`,
+        priority: 'high',
+        action: () => navigate('/extenders-dg?status=Pending Review')
+      });
+    }
+    
+    if (highPriorityMaterials.length > 0) {
+      items.push({
+        id: 3,
         title: `${highPriorityMaterials.length} high priority materials`,
         priority: 'medium',
         action: () => navigate('/raw-materials')
@@ -415,7 +499,7 @@ const Dashboard = () => {
     //   });
     // }
     return items;
-  }, [kpiStats, highPriorityMaterials, navigate]);
+  }, [kpiStats, highPriorityMaterials, navigate, extenderRecords]);
 
   // Alerts & Notifications
 //   const alerts = useMemo(() => {
@@ -471,15 +555,15 @@ const Dashboard = () => {
                 <div className="mt-2 flex items-end gap-4">
                   <div className="flex flex-col">
                     <p className="text-3xl font-bold text-gray-900">{stat.ghsValue}</p>
-                    <span className="text-xs font-medium text-gray-500 mt-1">GHS</span>
+                    <span className="text-xs font-medium text-gray-500 mt-1">RAW - GHS</span>
                   </div>
                   <div className="flex flex-col">
                     <p className="text-3xl font-bold text-gray-900">{stat.dgValue}</p>
-                    <span className="text-xs font-medium text-gray-500 mt-1">DG</span>
+                    <span className="text-xs font-medium text-gray-500 mt-1">RAW - DG</span>
                   </div>
                   <div className="flex flex-col">
                     <p className="text-3xl font-bold text-gray-900">{stat.extValue}</p>
-                    <span className="text-xs font-medium text-gray-500 mt-1">Extenders</span>
+                    <span className="text-xs font-medium text-gray-500 mt-1">Extenders - DG</span>
                   </div>
                 </div>
               </div>
@@ -521,6 +605,15 @@ const Dashboard = () => {
             <span className="text-sm font-medium text-gray-700">Manual Raw Material (?)</span>
           </button>
           <button
+            onClick={() => navigate('/extenders-dg?create=true')}
+            className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all"
+          >
+            <svg className="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="text-sm font-medium text-gray-700">Manual Extender/Sub-Phase (?)</span>
+          </button>
+          <button
             onClick={() => navigate('/analytics')}
             className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all"
           >
@@ -529,8 +622,8 @@ const Dashboard = () => {
             </svg>
             <span className="text-sm font-medium text-gray-700">View Analytics</span>
           </button>
-          <button
-            onClick={() => {/* Export functionality */}}
+          {/* <button
+            onClick={() => 
             data-tooltip-id="export-tooltip"
             data-tooltip-content="Export raw materials data as Excel or PDF format"
             className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all"
@@ -539,7 +632,7 @@ const Dashboard = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <span className="text-sm font-medium text-gray-700">Export Raw Materials Data</span>
-          </button>
+          </button> */}
           <Tooltip
             id="export-tooltip"
             place="top"
@@ -583,36 +676,55 @@ const Dashboard = () => {
             {/* Compliance percentages side by side */}
             <div className="flex items-center justify-center gap-8">
               <div className="text-center">
-                <div className="text-4xl font-bold text-gray-900 mb-2">{complianceStatus.rawMaterials.complianceRate}%</div>
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${complianceStatus.rawMaterials.bgColor} ${complianceStatus.rawMaterials.statusColor}`}>
-                  Raw Materials
+                <div className="text-4xl font-bold text-gray-900 mb-2">{complianceStatus.rawMaterials.ghs.complianceRate}%</div>
+                <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${complianceStatus.rawMaterials.ghs.bgColor} ${complianceStatus.rawMaterials.ghs.statusColor}`}>
+                  Raw Materials - GHS
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-gray-900 mb-2">{complianceStatus.rawMaterials.dg.complianceRate}%</div>
+                <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${complianceStatus.rawMaterials.dg.bgColor} ${complianceStatus.rawMaterials.dg.statusColor}`}>
+                  Raw Materials - DG
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-gray-900 mb-2">{complianceStatus.extenders.complianceRate}%</div>
                 <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${complianceStatus.extenders.bgColor} ${complianceStatus.extenders.statusColor}`}>
-                  Extenders
+                  Extenders - DG
                 </div>
               </div>
             </div>
             <div className="pt-4 border-t border-gray-200 space-y-4">
-              {/* Raw Materials progress bar */}
+              {/* Raw Materials GHS progress bar */}
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600">Approved Raw Materials</span>
-                  <span className="font-medium">{complianceStatus.rawMaterials.approved} / {complianceStatus.rawMaterials.total}</span>
+                  <span className="text-gray-600">Approved Raw Materials - GHS</span>
+                  <span className="font-medium">{complianceStatus.rawMaterials.ghs.approved} / {complianceStatus.rawMaterials.ghs.total}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all"
-                    style={{ width: `${complianceStatus.rawMaterials.complianceRate}%` }}
+                    style={{ width: `${complianceStatus.rawMaterials.ghs.complianceRate}%` }}
+                  />
+                </div>
+              </div>
+              {/* Raw Materials DG progress bar */}
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-gray-600">Approved Raw Materials - DG</span>
+                  <span className="font-medium">{complianceStatus.rawMaterials.dg.approved} / {complianceStatus.rawMaterials.dg.total}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-green-600 h-2 rounded-full transition-all"
+                    style={{ width: `${complianceStatus.rawMaterials.dg.complianceRate}%` }}
                   />
                 </div>
               </div>
               {/* Extenders progress bar */}
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-600">Approved Extenders</span>
+                  <span className="text-gray-600">Approved Extenders - DG</span>
                   <span className="font-medium">{complianceStatus.extenders.approved} / {complianceStatus.extenders.total}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -658,14 +770,14 @@ const Dashboard = () => {
               <span className="text-sm text-gray-600">Recent Activity (7 days)</span>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-900">
-                  {systemStatus.recentActivity}    materials</span>
+                  {systemStatus.recentRawMaterials} Raw Materials, {systemStatus.recentExtenders} Extenders/Sub-Phases</span>
                 <svg
                   className="w-4 h-4 text-gray-400 cursor-help"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                   data-tooltip-id="recent-activity-tooltip"
-                  data-tooltip-content="Number of materials uploaded or classified within the last 7 days."
+                  data-tooltip-content="Number of materials and extenders uploaded or classified within the last 7 days."
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -817,7 +929,7 @@ const Dashboard = () => {
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        GHS: {record.GHSStatus || record.status || 'Pending Review'}
+                         {record.GHSStatus || record.status || 'Pending Review'} - GHS
                       </span>
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         (record.DGStatus || record.status || 'Pending Review') === 'Pending Review' 
@@ -826,7 +938,7 @@ const Dashboard = () => {
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        DG: {record.DGStatus || record.status || 'Pending Review'}
+                        {record.DGStatus || record.status || 'Pending Review'} - DG
                       </span>
                     </div>
                   </div>
@@ -914,7 +1026,7 @@ const Dashboard = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       )}
-                      DG: {record.status}
+                      {record.status} - DG
                     </button>
                   </div>
                 </div>

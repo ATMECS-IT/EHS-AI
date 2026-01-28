@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 // import MaterialSearch from './MaterialSearch';
@@ -6,12 +6,11 @@ import Table from '../../components/Table/Table';
 import Modal from '../../components/Modal/Modal';
 import Accordion from '../../components/Accordion/Accordion';
 import { GHS_PICTOGRAMS, formatGHSTooltip } from '../../components/GHSInfo/GHSInfo';
-import sdsRecordsData from '../../data/sdsRecords.json';
+import extenderRecordsData from '../../data/extenderRecords.json';
 
 interface SDSRecord {
   id: number;
   materialId: string;
-  hazardousWaste?: boolean;
   materialName: string;
   source: string;
   partNumber?: string;
@@ -33,8 +32,6 @@ interface SDSRecord {
   ghsPictograms: string[];
   sdsSheetUrl?: string;
   status: string;
-  GHSStatus?: string;
-  DGStatus?: string;
   feedback: string;
   sections: {
     section2: {
@@ -54,9 +51,10 @@ interface SDSRecord {
       composition: Array<{
         chemicalName: string;
         casNumber: string;
-        concentration: string;
-        ghsClassification: string[];
-        hazardStatements: string[];
+        concentration?: string;
+        percentage?: string;
+        ghsClassification?: string[];
+        hazardStatements?: string[];
       }>;
     };
     section9: {
@@ -109,9 +107,10 @@ interface SDSRecord {
   uploadedDate: string;
   approvedDate?: string;
   rejectedDate?: string;
+  hazardousWaste?: boolean;
 }
 
-const RawMaterials = () => {
+const Extenders = () => {
   const [sdsRecords, setSdsRecords] = useState<SDSRecord[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<SDSRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -122,9 +121,6 @@ const RawMaterials = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newMaterialId, setNewMaterialId] = useState<string>('');
   const [createError, setCreateError] = useState<string>('');
-  const [isGhsChecked, setIsGhsChecked] = useState<boolean>(true);
-  const [isDgChecked, setIsDgChecked] = useState<boolean>(true);
-  const statusSetFromUrl = useRef(false);
 
   // Reject Feedback Modal states
   const [isRejectFeedbackModalOpen, setIsRejectFeedbackModalOpen] = useState(false);
@@ -155,8 +151,8 @@ const RawMaterials = () => {
   // Filter states
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
-   const [dgClassFilter, setDgClassFilter] = useState<string>('All');
-  const [ghsFilter, setGhsFilter] = useState<string>('All');
+  const [dgClassFilter, setDgClassFilter] = useState<string>('All');
+  // const [ghsFilter, setGhsFilter] = useState<string>('All');
   
   // Selection states
   const [selectedRecords, setSelectedRecords] = useState<Set<number>>(new Set());
@@ -167,27 +163,17 @@ const RawMaterials = () => {
 
   useEffect(() => {
     // Load from localStorage if available, otherwise use JSON file
-    const savedRecords = localStorage.getItem('sdsRecords');
-    let records: SDSRecord[] = [];
+    const savedRecords = localStorage.getItem('extenderRecords');
     if (savedRecords) {
       try {
-        records = JSON.parse(savedRecords);
+        setSdsRecords(JSON.parse(savedRecords));
       } catch (error) {
         console.error('Error loading from localStorage:', error);
-        records = sdsRecordsData as SDSRecord[];
+        setSdsRecords(extenderRecordsData as SDSRecord[]);
       }
     } else {
-      records = sdsRecordsData as SDSRecord[];
+      setSdsRecords(extenderRecordsData as SDSRecord[]);
     }
-    
-    // Ensure all records have GHSStatus and DGStatus initialized
-    const initializedRecords = records.map(record => ({
-      ...record,
-      GHSStatus: record.GHSStatus || 'Pending Review',
-      DGStatus: record.DGStatus || 'Pending Review'
-    }));
-    
-    setSdsRecords(initializedRecords);
   }, []);
 
   // Check for create query parameter and open modal
@@ -196,7 +182,10 @@ const RawMaterials = () => {
     if (searchParams.get('create') === 'true') {
       setIsCreateModalOpen(true);
       // Remove the query parameter from URL
-      navigate('/raw-materials', { replace: true });
+      const newSearchParams = new URLSearchParams(location.search);
+      newSearchParams.delete('create');
+      const newSearch = newSearchParams.toString();
+      navigate(`/extenders-dg${newSearch ? `?${newSearch}` : ''}`, { replace: true });
     }
   }, [location.search, navigate]);
 
@@ -205,36 +194,26 @@ const RawMaterials = () => {
     const searchParams = new URLSearchParams(location.search);
     const statusParam = searchParams.get('status');
     if (statusParam) {
-      // Determine the correct status filter value based on checkbox states
-      let filterValue = statusParam;
-      if (isGhsChecked && !isDgChecked) {
-        // Only GHS selected
-        filterValue = `${statusParam} - GHS`;
-      } else if (!isGhsChecked && isDgChecked) {
-        // Only DG selected
-        filterValue = `${statusParam} - DG`;
-      }
-      // Set the status filter
-      setStatusFilter(filterValue);
-      statusSetFromUrl.current = true;
+      // Set the status filter (the value in Extenders is just the status without "- DG")
+      setStatusFilter(statusParam);
       // Remove the query parameter from URL after setting the filter
       const newSearchParams = new URLSearchParams(location.search);
       newSearchParams.delete('status');
       const newSearch = newSearchParams.toString();
-      navigate(`/raw-materials${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+      navigate(`/extenders-dg${newSearch ? `?${newSearch}` : ''}`, { replace: true });
     }
-  }, [location.search, isGhsChecked, isDgChecked, navigate]);
+  }, [location.search, navigate]);
 
   // Save to localStorage and sync to JSON file whenever records change
   useEffect(() => {
     if (sdsRecords.length > 0) {
-      localStorage.setItem('sdsRecords', JSON.stringify(sdsRecords));
-      localStorage.setItem('sdsRecordsLastUpdated', new Date().toISOString());
+      localStorage.setItem('extenderRecords', JSON.stringify(sdsRecords));
+      localStorage.setItem('extenderRecordsLastUpdated', new Date().toISOString());
       
       // Try to sync to JSON file via API (if server is running)
       const syncToFile = async () => {
         try {
-          const response = await fetch('http://localhost:3001/api/save-sds-records', {
+          const response = await fetch('http://localhost:3001/api/save-extender-records', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -335,27 +314,9 @@ const RawMaterials = () => {
     e.stopPropagation(); // Prevent row click
     const approvedDate = new Date().toISOString();
     setSdsRecords((prevRecords) =>
-      prevRecords.map((record) => {
-        if (record.id !== id) return record;
-        
-        // Determine which status fields to update based on checkbox selection
-        const updates: Partial<SDSRecord> = { approvedDate, rejectedDate: undefined };
-        
-        if (isGhsChecked && isDgChecked) {
-          // Both selected - update both statuses
-          updates.GHSStatus = 'Approved';
-          updates.DGStatus = 'Approved';
-          updates.status = 'Approved'; // Keep main status for backward compatibility
-        } else if (isGhsChecked) {
-          // Only GHS selected
-          updates.GHSStatus = 'Approved';
-        } else if (isDgChecked) {
-          // Only DG selected
-          updates.DGStatus = 'Approved';
-        }
-        
-        return { ...record, ...updates };
-      })
+      prevRecords.map((record) =>
+        record.id === id ? { ...record, status: 'Approved', approvedDate, rejectedDate: undefined } : record
+      )
     );
   };
 
@@ -372,27 +333,11 @@ const RawMaterials = () => {
     if (isBulkReject) {
       // Bulk reject with feedback
       setSdsRecords(prevRecords =>
-        prevRecords.map(record => {
-          if (!recordsToReject.has(record.id)) return record;
-          
-          // Determine which status fields to update based on checkbox selection
-          const updates: Partial<SDSRecord> = { feedback: rejectFeedback, rejectedDate, approvedDate: undefined };
-          
-          if (isGhsChecked && isDgChecked) {
-            // Both selected - update both statuses
-            updates.GHSStatus = 'Rejected';
-            updates.DGStatus = 'Rejected';
-            updates.status = 'Rejected'; // Keep main status for backward compatibility
-          } else if (isGhsChecked) {
-            // Only GHS selected
-            updates.GHSStatus = 'Rejected';
-          } else if (isDgChecked) {
-            // Only DG selected
-            updates.DGStatus = 'Rejected';
-          }
-          
-          return { ...record, ...updates };
-        })
+        prevRecords.map(record =>
+          recordsToReject.has(record.id) 
+            ? { ...record, status: 'Rejected', feedback: rejectFeedback, rejectedDate, approvedDate: undefined } 
+            : record
+        )
       );
       alert(`${recordsToReject.size} record(s) rejected successfully!`);
       setSelectedRecords(new Set());
@@ -400,27 +345,11 @@ const RawMaterials = () => {
     } else {
       // Single reject with feedback
       setSdsRecords(prevRecords =>
-        prevRecords.map(record => {
-          if (!recordsToReject.has(record.id)) return record;
-          
-          // Determine which status fields to update based on checkbox selection
-          const updates: Partial<SDSRecord> = { feedback: rejectFeedback, rejectedDate, approvedDate: undefined };
-          
-          if (isGhsChecked && isDgChecked) {
-            // Both selected - update both statuses
-            updates.GHSStatus = 'Rejected';
-            updates.DGStatus = 'Rejected';
-            updates.status = 'Rejected'; // Keep main status for backward compatibility
-          } else if (isGhsChecked) {
-            // Only GHS selected
-            updates.GHSStatus = 'Rejected';
-          } else if (isDgChecked) {
-            // Only DG selected
-            updates.DGStatus = 'Rejected';
-          }
-          
-          return { ...record, ...updates };
-        })
+        prevRecords.map(record =>
+          recordsToReject.has(record.id) 
+            ? { ...record, status: 'Rejected', feedback: rejectFeedback, rejectedDate, approvedDate: undefined } 
+            : record
+        )
       );
     }
 
@@ -455,12 +384,12 @@ const RawMaterials = () => {
   const handleClearFilters = () => {
     setSearchTerm('');
     setStatusFilter('All');
-    // setDgClassFilter('All');
-    setGhsFilter('All');
+    setDgClassFilter('All');
+    // setGhsFilter('All');
   };
 
   // Check if any filters are active
-  const hasActiveFilters = searchTerm !== '' || statusFilter !== 'All' || ghsFilter !== 'All';
+  const hasActiveFilters = searchTerm !== '' || statusFilter !== 'All' || dgClassFilter !== 'All';
 
   const handleCreateMaterial = () => {
     // Validate empty fields
@@ -523,7 +452,7 @@ const RawMaterials = () => {
       ghsRationale: "Ethanol's low flash point (~13 °C) and ability to form explosive vapor-air mixtures clearly meet the criteria for Flammable Liquid Category 2 (H225). The SDS assigns Carcinogenicity Category 1A (H350) based on regulatory listings (e.g., IARC Group 1 references), which triggers the GHS08 health hazard pictogram. Eye exposure data supports Eye Irritation Category 2A (H319). These combined hazards justify the \"Danger\" signal word and multiple pictograms.",
       dgRationale: 'Under UN Model Regulations, liquids with flash point < 23 °C and sustained flammable vapor behavior are classified as Class 3 Flammable Liquids. Ethanol therefore receives UN 1170, Class 3, Packing Group II (medium danger). This classification is mandatory across road, sea, and air transport, regardless of laboratory or commercial use.',
       ghsPictograms: ['GHS02', 'GHS08', 'GHS07'],
-      sdsSheetUrl: '/public/sds sheets/WrK-120B.pdf',
+      sdsSheetUrl: '/public/extenders/WrK-120B.pdf',
       status: 'Pending Review',
       feedback: '',
       sections: {
@@ -686,27 +615,9 @@ const RawMaterials = () => {
     
     const approvedDate = new Date().toISOString();
     setSdsRecords(prevRecords =>
-      prevRecords.map(record => {
-        if (!selectedRecords.has(record.id)) return record;
-        
-        // Determine which status fields to update based on checkbox selection
-        const updates: Partial<SDSRecord> = { approvedDate, rejectedDate: undefined };
-        
-        if (isGhsChecked && isDgChecked) {
-          // Both selected - update both statuses
-          updates.GHSStatus = 'Approved';
-          updates.DGStatus = 'Approved';
-          updates.status = 'Approved'; // Keep main status for backward compatibility
-        } else if (isGhsChecked) {
-          // Only GHS selected
-          updates.GHSStatus = 'Approved';
-        } else if (isDgChecked) {
-          // Only DG selected
-          updates.DGStatus = 'Approved';
-        }
-        
-        return { ...record, ...updates };
-      })
+      prevRecords.map(record =>
+        selectedRecords.has(record.id) ? { ...record, status: 'Approved', feedback: record.feedback || '', approvedDate, rejectedDate: undefined } : record
+      )
     );
     
     alert(`${selectedRecords.size} record(s) approved successfully!`);
@@ -727,63 +638,59 @@ const RawMaterials = () => {
     setIsRejectFeedbackModalOpen(true);
   };
 
-  const  tableColumns = useMemo(() => {
-    const columns = [
-      {
-        key: 'checkbox',
-        header: (
-          <input
-            type="checkbox"
-            checked={selectAll}
-            onChange={handleSelectAll}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-          />
-        ),
-        render: (record: SDSRecord) => (
-          <input
-            type="checkbox"
-            checked={selectedRecords.has(record.id)}
-            onChange={(e) => {
-              e.stopPropagation();
-              handleSelectRecord(record.id);
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-          />
-        ),
+  const tableColumns = [
+    {
+      key: 'checkbox',
+      header: (
+        <input
+          type="checkbox"
+          checked={selectAll}
+          onChange={handleSelectAll}
+          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+        />
+      ),
+      render: (record: SDSRecord) => (
+        <input
+          type="checkbox"
+          checked={selectedRecords.has(record.id)}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleSelectRecord(record.id);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+        />
+      ),
+    },
+    {
+      key: 'materialId',
+      header: 'Material ID',
+    },
+    {
+      key: 'materialName',
+      header: 'Material Name',
+      render: (record: SDSRecord) => {
+        const truncatedText = record.materialName.length > 16
+          ? `${record.materialName.substring(0, 16)}...` 
+          : record.materialName;
+        
+        const tooltipId = `material-name-${record.id}`;
+        
+        return (
+          <span
+            data-tooltip-id={tooltipId}
+            data-tooltip-content={record.materialName}
+            className="cursor-help truncate block max-w-xs"
+          >
+            {truncatedText}
+          </span>
+        );
       },
-      {
-        key: 'materialId',
-        header: 'Material ID',
-      },
-      {
-        key: 'materialName',
-        header: 'Material Name',
-        render: (record: SDSRecord) => {
-          const truncatedText = record.materialName.length > 16
-            ? `${record.materialName.substring(0, 16)}...` 
-            : record.materialName;
-          
-          const tooltipId = `material-name-${record.id}`;
-          
-          return (
-            <span
-              data-tooltip-id={tooltipId}
-              data-tooltip-content={record.materialName}
-              className="cursor-help truncate block max-w-xs"
-            >
-              {truncatedText}
-            </span>
-          );
-        },
-      },
-    ];
-
-    // Add DG Classification column if DG checkbox is checked
-    if (isDgChecked) {
-      columns.push({
-        key: 'aiRecommendedDGCode',
-        header: 'DG Classification',
+    },
+ 
+    {
+      key: 'aiRecommendedDGCode',
+      header: 'DG Classification',
       render: (record: SDSRecord) => {
         // Extract DG information from section14
         const section14 = record.sections?.section14;
@@ -921,147 +828,12 @@ const RawMaterials = () => {
           </div>
         );
       },
-      });
-    }
-
-    // Add GHS Classification column if GHS checkbox is checked
-    if (isGhsChecked) {
-      columns.push({
-        key: 'ghs',
-        header: 'GHS Classification',
+    },
+    {
+      key: 'hazardousWaste',
+      header: 'Hazardous Waste',
       render: (record: SDSRecord) => {
-        // Use ghsPictograms directly from the record
-        const pictogramArray = record.ghsPictograms || [];
-
-        // Get classification from section2 if available (same for all pictograms in this record)
-        const section2 = record.sections?.section2;
-        const classification = section2?.classification || 'N/A';
-        
-        return (
-          <div className="flex gap-1 flex-wrap">
-            {pictogramArray.length > 0 ? (
-              <>
-                {pictogramArray.map((ghsCode) => {
-                  const ghsData = GHS_PICTOGRAMS[ghsCode];
-                  if (!ghsData) return null;
-                  
-                  // Extract H-codes from hazard statements
-                 // const hCodes = ghsData.hazardStatements.map(h => h.split(':')[0]).join(', ');
-                  
-                  // Extract P-codes from precautionary statements
-                //   const pCodes = ghsData.precautionaryStatements.map(p => {
-                //     const match = p.match(/^P\d+(?:\+\d+)?/);
-                //     return match ? match[0] : '';
-                //   }).filter(Boolean).join(', ');
-                  
-                  const tooltipId = `ghs-${record.id}-${ghsCode}`;
-                  // Create detailed HTML tooltip content
-                //   <tr>
-                //            <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Hazard Codes (H):</td>
-                //            <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 360px; color: #1f2937;">${hCodes || 'N/A'}</td>
-                //          </tr>
-                //          <tr>
-                //            <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Precautionary Codes (P):</td>
-                //            <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 360px; color: #1f2937;">${pCodes || 'N/A'}</td>
-                //          </tr>
-                  const tooltipContent = `
-                    <div style="text-align: left;font-size: 0.875rem; white-space: normal; background-color: #ffffff; color: #1f2937; width: 650px;">
-                      <table style="border-collapse: collapse; width: 95%; table-layout: fixed; color: #1f2937;">
-                        <tr>
-                          <td width="30%" style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">GHS Code:</td>
-                          <td width="70%" style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.code}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Name:</td>
-                          <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.name}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Category/Classification:</td>
-                          <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${classification}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Description:</td>
-                          <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.description}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Signal Word:</td>
-                          <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.signalWord}</td>
-                        </tr>
-                        
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Hazard Statements:</td>
-                          <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.hazardStatements.join('<br>')}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 4px 8px; font-weight: 600; white-space: nowrap; vertical-align: top; color: #1f2937;">Precautionary Statements:</td>
-                          <td style="padding: 4px 8px; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.precautionaryStatements.join('<br>')}</td>
-                        </tr>
-                      </table>
-                    </div>
-                  `;
-                  
-                  return (
-                    <span
-                      key={ghsCode}
-                      data-tooltip-id={tooltipId}
-                      data-tooltip-html={tooltipContent}
-                      className="text-xl cursor-help inline-block"
-                      style={{ lineHeight: 1 }}
-                    >
-                      {ghsData.icon}
-                    </span>
-                  );
-                })}
-                {/* {pictogramArray.map((ghsCode) => {
-                  const ghsData = GHS_PICTOGRAMS[ghsCode];
-                  if (!ghsData) return null;
-                  
-                  const tooltipId = `ghs-${record.id}-${ghsCode}`;
-                  
-                  return (  
-                    <Tooltip
-                      key={`tooltip-${tooltipId}`}
-                      id={tooltipId}
-                      place="top"
-                      offset={10}
-                      delayShow={200}
-                      delayHide={0}
-                      float={false}
-                      opacity={1}
-                      style={{
-                        backgroundColor: '#ffffff',
-                        opacity: 1,
-                        color: '#1f2937',
-                        borderRadius: '0.5rem',
-                        padding: '1rem',
-                        maxWidth: '520px',
-                        fontSize: '0.875rem',
-                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                        zIndex: 9999,
-                        border: '1px solid #e5e7eb',
-                        whiteSpace: 'normal',
-                        wordBreak: 'break-word',
-                      }}
-                    />
-                  );
-                })} */}
-              </>
-            ) : (
-              <span className="text-xs text-gray-400">N/A</span>
-            )}
-          </div>
-        );
-      },
-      });
-    }
-
-    // Add remaining columns
-    columns.push(
-      {
-        key: 'hazardousWaste',
-        header: 'Hazardous Waste',
-        render: (record: SDSRecord) => {
-        // Get hazardousWaste from the record (from sdsRecords.json)
+        // Get hazardousWaste from the record (from extenderRecords.json)
         const isHazardous = record.hazardousWaste ?? false;
         return (
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -1074,12 +846,139 @@ const RawMaterials = () => {
         );
       },
     },
+    // {
+    //   key: 'ghs',
+    //   header: 'GHS Classification',
+    //   render: (record: SDSRecord) => {
+    //     // Use ghsPictograms directly from the record
+    //     const pictogramArray = record.ghsPictograms || [];
+
+    //     // Get classification from section2 if available (same for all pictograms in this record)
+    //     const section2 = record.sections?.section2;
+    //     const classification = section2?.classification || 'N/A';
+        
+    //     return (
+    //       <div className="flex gap-1 flex-wrap">
+    //         {pictogramArray.length > 0 ? (
+    //           <>
+    //             {pictogramArray.map((ghsCode) => {
+    //               const ghsData = GHS_PICTOGRAMS[ghsCode];
+    //               if (!ghsData) return null;
+                  
+    //               // Extract H-codes from hazard statements
+    //              // const hCodes = ghsData.hazardStatements.map(h => h.split(':')[0]).join(', ');
+                  
+    //               // Extract P-codes from precautionary statements
+    //             //   const pCodes = ghsData.precautionaryStatements.map(p => {
+    //             //     const match = p.match(/^P\d+(?:\+\d+)?/);
+    //             //     return match ? match[0] : '';
+    //             //   }).filter(Boolean).join(', ');
+                  
+    //               const tooltipId = `ghs-${record.id}-${ghsCode}`;
+    //               // Create detailed HTML tooltip content
+    //             //   <tr>
+    //             //            <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Hazard Codes (H):</td>
+    //             //            <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 360px; color: #1f2937;">${hCodes || 'N/A'}</td>
+    //             //          </tr>
+    //             //          <tr>
+    //             //            <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Precautionary Codes (P):</td>
+    //             //            <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 360px; color: #1f2937;">${pCodes || 'N/A'}</td>
+    //             //          </tr>
+    //               const tooltipContent = `
+    //                 <div style="text-align: left;font-size: 0.875rem; white-space: normal; background-color: #ffffff; color: #1f2937; width: 650px;">
+    //                   <table style="border-collapse: collapse; width: 95%; table-layout: fixed; color: #1f2937;">
+    //                     <tr>
+    //                       <td width="30%" style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">GHS Code:</td>
+    //                       <td width="70%" style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.code}</td>
+    //                     </tr>
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Name:</td>
+    //                       <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.name}</td>
+    //                     </tr>
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Category/Classification:</td>
+    //                       <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${classification}</td>
+    //                     </tr>
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Description:</td>
+    //                       <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.description}</td>
+    //                     </tr>
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Signal Word:</td>
+    //                       <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.signalWord}</td>
+    //                     </tr>
+                        
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap; vertical-align: top; color: #1f2937;">Hazard Statements:</td>
+    //                       <td style="padding: 4px 8px; border-bottom: 1px solid #e5e7eb; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.hazardStatements.join('<br>')}</td>
+    //                     </tr>
+    //                     <tr>
+    //                       <td style="padding: 4px 8px; font-weight: 600; white-space: nowrap; vertical-align: top; color: #1f2937;">Precautionary Statements:</td>
+    //                       <td style="padding: 4px 8px; word-wrap: break-word; word-break: break-word; white-space: normal; max-width: 500px; color: #1f2937;">${ghsData.precautionaryStatements.join('<br>')}</td>
+    //                     </tr>
+    //                   </table>
+    //                 </div>
+    //               `;
+                  
+    //               return (
+    //                 <span
+    //                   key={ghsCode}
+    //                   data-tooltip-id={tooltipId}
+    //                   data-tooltip-html={tooltipContent}
+    //                   className="text-xl cursor-help inline-block"
+    //                   style={{ lineHeight: 1 }}
+    //                 >
+    //                   {ghsData.icon}
+    //                 </span>
+    //               );
+    //             })}
+    //             {/* {pictogramArray.map((ghsCode) => {
+    //               const ghsData = GHS_PICTOGRAMS[ghsCode];
+    //               if (!ghsData) return null;
+                  
+    //               const tooltipId = `ghs-${record.id}-${ghsCode}`;
+                  
+    //               return (  
+    //                 <Tooltip
+    //                   key={`tooltip-${tooltipId}`}
+    //                   id={tooltipId}
+    //                   place="top"
+    //                   offset={10}
+    //                   delayShow={200}
+    //                   delayHide={0}
+    //                   float={false}
+    //                   opacity={1}
+    //                   style={{
+    //                     backgroundColor: '#ffffff',
+    //                     opacity: 1,
+    //                     color: '#1f2937',
+    //                     borderRadius: '0.5rem',
+    //                     padding: '1rem',
+    //                     maxWidth: '520px',
+    //                     fontSize: '0.875rem',
+    //                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    //                     zIndex: 9999,
+    //                     border: '1px solid #e5e7eb',
+    //                     whiteSpace: 'normal',
+    //                     wordBreak: 'break-word',
+    //                   }}
+    //                 />
+    //               );
+    //             })} */}
+    //           </>
+    //         ) : (
+    //           <span className="text-xs text-gray-400">N/A</span>
+    //         )}
+    //       </div>
+    //     );
+    //   },
+    // },
     {
       key: 'rationaleSummary',
       header: 'Rationale',
       render: (record: SDSRecord) => {
-        const truncatedText = record.rationaleSummary.length > 16
-          ? `${record.rationaleSummary.substring(0, 16)}...` 
+        const truncatedText = record.rationaleSummary.length > 25 
+          ? `${record.rationaleSummary.substring(0, 25)}...` 
           : record.rationaleSummary;
         
         const tooltipId = `rationale-${record.id}`;
@@ -1088,7 +987,7 @@ const RawMaterials = () => {
           <div 
             className="truncate cursor-help"
             data-tooltip-id={tooltipId}
-            data-tooltip-content={record.rationaleSummary.length > 16 ? record.rationaleSummary : ''}
+            data-tooltip-content={record.rationaleSummary.length > 25 ? record.rationaleSummary : ''}
           >
             {truncatedText}
           </div>
@@ -1122,7 +1021,7 @@ const RawMaterials = () => {
       ),
     },
     {
-      key: 'ghsDgStatus',
+      key: 'status',
       header: 'Status',
       render: (record: SDSRecord) => {
         const statusColors: Record<string, string> = {
@@ -1130,151 +1029,86 @@ const RawMaterials = () => {
           'Approved': 'bg-green-100 text-green-800',
           'Rejected': 'bg-red-100 text-red-800',
         };
-        
-        const ghsStatus = record.GHSStatus || 'Pending Review';
-        const dgStatus = record.DGStatus || 'Pending Review';
-        
         return (
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-600 w-6">GHS:</span>
-              <span
-                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  statusColors[ghsStatus] || 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                {ghsStatus}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-600 w-6">DG:</span>
-              <span
-                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  statusColors[dgStatus] || 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                {dgStatus}
-              </span>
-            </div>
-          </div>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium ${
+              statusColors[record.status] || 'bg-gray-100 text-gray-800'
+            }`}
+          >
+            {record.status} - DG
+          </span>
         );
       },
     },
     {
-      key: 'status',
-      header: 'Status / Actions',
+      key: 'actions',
+      header: 'Actions',
       render: (record: SDSRecord) => {
         const statusColors: Record<string, string> = {
           'Pending Review': 'bg-yellow-100 text-yellow-800',
           'Approved': 'bg-green-100 text-green-800',
           'Rejected': 'bg-red-100 text-red-800',
         };
-        
-        // Determine which status to display based on checkbox selection
-        let displayStatus = record.status || 'Pending Review';
-        let isApproved = false;
-        let isRejected = false;
-        let approveLabel = 'Approve';
-        let rejectLabel = 'Reject';
-        
-        if (isGhsChecked && !isDgChecked) {
-          // Only GHS is selected
-          displayStatus = record.GHSStatus || 'Pending Review';
-          isApproved = record.GHSStatus === 'Approved';
-          isRejected = record.GHSStatus === 'Rejected';
-          approveLabel = 'Approve GHS';
-          rejectLabel = 'Reject GHS';
-        } else if (!isGhsChecked && isDgChecked) {
-          // Only DG is selected
-          displayStatus = record.DGStatus || 'Pending Review';
-          isApproved = record.DGStatus === 'Approved';
-          isRejected = record.DGStatus === 'Rejected';
-          approveLabel = 'Approve DG';
-          rejectLabel = 'Reject DG';
-        } else if (isGhsChecked && isDgChecked) {
-          // Both selected - show combined status
-          const ghsStatus = record.GHSStatus || 'Pending Review';
-          const dgStatus = record.DGStatus || 'Pending Review';
-          
-          // If both are the same, show that status
-          if (ghsStatus === dgStatus) {
-            displayStatus = ghsStatus;
-          } else {
-            // Show combined status
-            displayStatus = `${ghsStatus} / ${dgStatus}`;
-          }
-          
-          isApproved = record.GHSStatus === 'Approved' && record.DGStatus === 'Approved';
-          isRejected = record.GHSStatus === 'Rejected' && record.DGStatus === 'Rejected';
-        } else {
-          // Fallback to main status (shouldn't happen as at least one must be selected)
-          isApproved = record.status === 'Approved';
-          isRejected = record.status === 'Rejected';
-        }
-        
-        // If approved or rejected, show status text; otherwise show buttons
-        if (isApproved || isRejected) {
+
+        // Show buttons only when status is "Pending Review"
+        if (record.status === 'Pending Review') {
           return (
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                statusColors[displayStatus] || 
-                (displayStatus.includes('/') ? 'bg-gray-100 text-gray-800' : statusColors[displayStatus.split(' / ')[0]] || 'bg-gray-100 text-gray-800')
-              }`}
-            >
-              {displayStatus}
-            </span>
+            <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={(e) => handleApprove(record.id, e)}
+                className="px-3 py-1 rounded text-xs font-medium transition-colors flex items-center space-x-1 bg-green-600 text-white hover:bg-green-700"
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span>Approve - DG</span>
+              </button>
+              <button
+                onClick={(e) => handleReject(record.id, e)}
+                className="px-3 py-1 rounded text-xs font-medium transition-colors flex items-center space-x-1 bg-red-600 text-white hover:bg-red-700"
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                <span>Reject - DG</span>
+              </button>
+            </div>
           );
         }
-        
-        // Show buttons for pending review
+
+        // Show status badge when approved or rejected
         return (
-          <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={(e) => handleApprove(record.id, e)}
-              className="px-3 py-1 rounded text-xs font-medium transition-colors flex items-center space-x-1 bg-green-600 text-white hover:bg-green-700"
-            >
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={3}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              <span>{approveLabel}</span>
-            </button>
-            <button
-              onClick={(e) => handleReject(record.id, e)}
-              className="px-3 py-1 rounded text-xs font-medium transition-colors flex items-center space-x-1 bg-red-600 text-white hover:bg-red-700"
-            >
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={3}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-              <span>{rejectLabel}</span>
-            </button>
-          </div>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium ${
+              statusColors[record.status] || 'bg-gray-100 text-gray-800'
+            }`}
+          >
+            {record.status} 
+          </span>
         );
       },
-    }
-    );
-
-    return columns;
-  }, [selectAll, selectedRecords, isDgChecked, isGhsChecked, handleSelectAll, handleSelectRecord]);
+    },
+  ];
 
   const renderSection2 = (section: SDSRecord['sections']['section2']) => (
     <div className="space-y-6">
@@ -1399,7 +1233,7 @@ const RawMaterials = () => {
           <p className="text-sm text-gray-800 leading-relaxed">{section.description}</p>
         </div>
       )}
-      {section.composition.length > 0 ? (
+      {section.composition && section.composition.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gradient-to-r from-gray-100 to-gray-200">
@@ -1426,23 +1260,31 @@ const RawMaterials = () => {
                 <tr key={idx} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{comp.chemicalName}</td>
                   <td className="px-6 py-4 text-sm text-gray-800 font-mono">{comp.casNumber}</td>
-                  <td className="px-6 py-4 text-sm text-gray-800">{comp.concentration}</td>
+                  <td className="px-6 py-4 text-sm text-gray-800">{comp.concentration || (comp as any).percentage || 'N/A'}</td>
                   <td className="px-6 py-4 text-sm text-gray-800">
                     <div className="flex flex-wrap gap-1">
-                      {comp.ghsClassification.map((cls, i) => (
-                        <span key={i} className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">
-                          {cls}
-                        </span>
-                      ))}
+                      {comp.ghsClassification && comp.ghsClassification.length > 0 ? (
+                        comp.ghsClassification.map((cls, i) => (
+                          <span key={i} className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">
+                            {cls}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-400">N/A</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-800">
                     <div className="flex flex-wrap gap-1">
-                      {comp.hazardStatements.map((stmt, i) => (
-                        <span key={i} className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-mono">
-                          {stmt}
-                        </span>
-                      ))}
+                      {comp.hazardStatements && comp.hazardStatements.length > 0 ? (
+                        comp.hazardStatements.map((stmt, i) => (
+                          <span key={i} className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-mono">
+                            {stmt}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-400">N/A</span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1716,64 +1558,57 @@ const RawMaterials = () => {
   // Calculate stats dynamically from sdsRecords
   const stats = useMemo(() => {
     const totalCount = sdsRecords.length;
-    
-    // Calculate GHS counts
-    const ghsApprovedCount = sdsRecords.filter(record => record.GHSStatus === 'Approved').length;
-    const ghsRejectedCount = sdsRecords.filter(record => record.GHSStatus === 'Rejected').length;
-    const ghsPendingCount = sdsRecords.filter(record => record.GHSStatus === 'Pending Review' || !record.GHSStatus).length;
-    
-    // Calculate DG counts
-    const dgApprovedCount = sdsRecords.filter(record => record.DGStatus === 'Approved').length;
-    const dgRejectedCount = sdsRecords.filter(record => record.DGStatus === 'Rejected').length;
-    const dgPendingCount = sdsRecords.filter(record => record.DGStatus === 'Pending Review' || !record.DGStatus).length;
+    const approvedCount = sdsRecords.filter(record => record.status === 'Approved').length;
+    const rejectedCount = sdsRecords.filter(record => record.status === 'Rejected').length;
+    const pendingCount = sdsRecords.filter(record => record.status === 'Pending Review').length;
 
     return [
       { 
-        title: 'Total Classifications', 
-        ghsValue: totalCount.toLocaleString(),
-        dgValue: totalCount.toLocaleString(),
+        title: 'Total Extenders/Sub-Phases', 
+        value: totalCount.toLocaleString(), 
         change: '+12%', 
         icon: (
           <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         ),
+        // icon: '📊', 
         changeColor: 'text-green-600' 
       },
       { 
         title: 'Pending Reviews', 
-        ghsValue: ghsPendingCount.toLocaleString(),
-        dgValue: dgPendingCount.toLocaleString(),
+        value: pendingCount.toLocaleString(), 
         change: '+3%', 
         icon: (
           <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         ),
+        // icon: '⏳', 
         changeColor: 'text-yellow-600' 
       },
       { 
         title: 'Approved', 
-        ghsValue: ghsApprovedCount.toLocaleString(),
-        dgValue: dgApprovedCount.toLocaleString(),
+        value: approvedCount.toLocaleString(), 
         change: '+8%', 
         icon: (
           <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         ),
+        // icon: '✅', 
         changeColor: 'text-green-600' 
       },
       { 
         title: 'Rejected', 
-        ghsValue: ghsRejectedCount.toLocaleString(),
-        dgValue: dgRejectedCount.toLocaleString(),
+        value: rejectedCount.toLocaleString(), 
         change: '+5%', 
         icon: (
           <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         ),
+        // icon: '❌', 
         changeColor: 'text-red-600' 
       }
     ];
@@ -1793,15 +1628,15 @@ const RawMaterials = () => {
   }, [sdsRecords]);
 
   // Extract unique GHS codes from records
-  const ghsCodes = useMemo(() => {
-    const codes = new Set<string>();
-    sdsRecords.forEach(record => {
-      record.ghsPictograms.forEach(code => {
-        codes.add(code);
-      });
-    });
-    return ['All', ...Array.from(codes).sort()];
-  }, [sdsRecords]);
+  // const ghsCodes = useMemo(() => {
+  //   const codes = new Set<string>();
+  //   sdsRecords.forEach(record => {
+  //     record.ghsPictograms.forEach(code => {
+  //       codes.add(code);
+  //     });
+  //   });
+  //   return ['All', ...Array.from(codes).sort()];
+  // }, [sdsRecords]);
 
   // Filter records based on search term, status, and DG class
   const filteredRecords = useMemo(() => {
@@ -1821,58 +1656,28 @@ const RawMaterials = () => {
       }
       
       // Status filter
-      if (statusFilter !== 'All') {
-        if (statusFilter.includes(' - GHS')) {
-          // Filter by GHS status
-          const expectedStatus = statusFilter.replace(' - GHS', '');
-          const actualStatus = record.GHSStatus || 'Pending Review';
-          if (actualStatus !== expectedStatus) {
-            return false;
-          }
-        } else if (statusFilter.includes(' - DG')) {
-          // Filter by DG status
-          const expectedStatus = statusFilter.replace(' - DG', '');
-          const actualStatus = record.DGStatus || 'Pending Review';
-          if (actualStatus !== expectedStatus) {
-            return false;
-          }
-        } else {
-          // Both selected or generic filter - check both statuses
-          // For "All" or generic status, check if either matches
-          if (isGhsChecked && isDgChecked) {
-            // Both selected - check if both match the filter
-            const ghsStatus = record.GHSStatus || 'Pending Review';
-            const dgStatus = record.DGStatus || 'Pending Review';
-            if (ghsStatus !== statusFilter && dgStatus !== statusFilter) {
-              return false;
-            }
-          } else {
-            // Fallback to main status
-            if (record.status !== statusFilter) {
-              return false;
-            }
-          }
-        }
+      if (statusFilter !== 'All' && record.status !== statusFilter) {
+        return false;
       }
       
-      // DG Class filter (only apply if DG checkbox is checked)
-      if (isDgChecked && dgClassFilter !== 'All') {
+      // DG Class filter
+      if (dgClassFilter !== 'All') {
         const recordClass = record.aiRecommendedDGCode.match(/Class\s+[\d.]+/)?.[0];
         if (recordClass !== dgClassFilter) {
           return false;
         }
       }
       
-      // GHS filter (only apply if GHS checkbox is checked)
-      if (isGhsChecked && ghsFilter !== 'All') {
-        if (!record.ghsPictograms.includes(ghsFilter)) {
-          return false;
-        }
-      }
+      // GHS filter
+      // if (ghsFilter !== 'All') {
+      //   if (!record.ghsPictograms.includes(ghsFilter)) {
+      //     return false;
+      //   }
+      // }
       
       return true;
     });
-  }, [sdsRecords, searchTerm, statusFilter, dgClassFilter, ghsFilter, isDgChecked, isGhsChecked]);
+  }, [sdsRecords, searchTerm, statusFilter, dgClassFilter]);
 
   // Paginate filtered records
   const paginatedRecords = useMemo(() => {
@@ -1887,18 +1692,7 @@ const RawMaterials = () => {
   // Reset to page 1 when filters or search change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, dgClassFilter, ghsFilter, itemsPerPage]);
-
-  // Reset status filter when checkboxes change to avoid invalid filter state
-  // But only if status wasn't set from URL
-  useEffect(() => {
-    if (!statusSetFromUrl.current) {
-      setStatusFilter('All');
-    } else {
-      // Reset the flag after first checkbox change
-      statusSetFromUrl.current = false;
-    }
-  }, [isGhsChecked, isDgChecked]);
+  }, [searchTerm, statusFilter, dgClassFilter, itemsPerPage]);
 
   // Update select all checkbox when page changes or selections change
   useEffect(() => {
@@ -1917,18 +1711,9 @@ const RawMaterials = () => {
             className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
           >
             <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600 text-left">{stat.title}</p>
-                <div className="mt-2 flex items-end gap-4">
-                  <div className="flex flex-col">
-                    <p className="text-3xl font-bold text-gray-900">{stat.ghsValue}</p>
-                    <span className="text-xs font-medium text-gray-500 mt-1">GHS</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <p className="text-3xl font-bold text-gray-900">{stat.dgValue}</p>
-                    <span className="text-xs font-medium text-gray-500 mt-1">DG</span>
-                  </div>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
                 {/* <p className={`text-sm ${stat.changeColor || 'text-green-600'} mt-1`}>{stat.change}</p> */}
               </div>
               <div className="flex items-center justify-center">{stat.icon}</div>
@@ -1955,60 +1740,22 @@ const RawMaterials = () => {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-lg text-left font-semibold text-gray-900">Raw Materials</h2>
+                <h2 className="text-lg text-left font-semibold text-gray-900">Extenders/Sub-Phases - DG</h2>
                 <p className="text-sm text-left text-gray-600 mt-1">
                   Manage and classify Safety Data Sheets.
                 </p>
               </div>
               
-              <div className="flex items-center gap-4">
-                {/* GHS and DG Checkboxes */}
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer px-3 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors group">
-                    <input
-                      type="checkbox"
-                      checked={isGhsChecked}
-                      onChange={(e) => {
-                        const newValue = e.target.checked;
-                        // Prevent unchecking if DG is already unchecked
-                        if (!newValue && !isDgChecked) {
-                          return;
-                        }
-                        setIsGhsChecked(newValue);
-                      }}
-                      className="w-4 h-4 accent-white border-2 border-white rounded focus:outline-none checked:bg-white checked:border-white group-hover:border-blue-200 transition-all cursor-pointer"
-                    />
-                    <span className="text-sm font-medium text-white">GHS</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer px-3 py-2 bg-green-600 rounded-md hover:bg-green-700 transition-colors group">
-                    <input
-                      type="checkbox"
-                      checked={isDgChecked}
-                      onChange={(e) => {
-                        const newValue = e.target.checked;
-                        // Prevent unchecking if GHS is already unchecked
-                        if (!newValue && !isGhsChecked) {
-                          return;
-                        }
-                        setIsDgChecked(newValue);
-                      }}
-                      className="w-4 h-4 accent-white border-2 border-white rounded focus:outline-none checked:bg-white checked:border-white group-hover:border-green-200 transition-all cursor-pointer"
-                    />
-                    <span className="text-sm font-medium text-white">DG</span>
-                  </label>
-                </div>
-                
-                {/* Create Raw Material Button */}
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-700 transition-colors shadow-sm"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Manual Raw Material (?)
-                </button>
-              </div>
+              {/* Create Raw Material Button */}
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-700 transition-colors shadow-sm"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Manual Extender/Sub-Phase (?)
+              </button>
             </div>
 
             {/* Search and Filters */}
@@ -2060,63 +1807,43 @@ const RawMaterials = () => {
                     className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="All">All</option>
-                    {isGhsChecked && !isDgChecked ? (
-                      <>
-                        <option value="Pending Review - GHS">Pending Review - GHS</option>
-                        <option value="Approved - GHS">Approved - GHS</option>
-                        <option value="Rejected - GHS">Rejected - GHS</option>
-                      </>
-                    ) : !isGhsChecked && isDgChecked ? (
-                      <>
-                        <option value="Pending Review - DG">Pending Review - DG</option>
-                        <option value="Approved - DG">Approved - DG</option>
-                        <option value="Rejected - DG">Rejected - DG</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="Pending Review">Pending Review</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Rejected">Rejected</option>
-                      </>
-                    )}
+                    <option value="Pending Review">Pending Review - DG</option>
+                    <option value="Approved">Approved - DG</option>
+                    <option value="Rejected">Rejected - DG</option>
                   </select>
                 </div>
 
                 {/* DG Class Filter */}
-                {isDgChecked && (
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">DG Class:</label>
-                    <select
-                      value={dgClassFilter}
-                      onChange={(e) => setDgClassFilter(e.target.value)}
-                      className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {dgClasses.map((dgClass) => (
-                        <option key={dgClass} value={dgClass}>
-                          {dgClass}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                {/* <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">DG Class:</label>
+                  <select
+                    value={dgClassFilter}
+                    onChange={(e) => setDgClassFilter(e.target.value)}
+                    className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {dgClasses.map((dgClass) => (
+                      <option key={dgClass} value={dgClass}>
+                        {dgClass}
+                      </option>
+                    ))}
+                  </select>
+                </div> */}
 
                 {/* GHS Filter */}
-                {isGhsChecked && (
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">GHS:</label>
-                    <select
-                      value={ghsFilter}
-                      onChange={(e) => setGhsFilter(e.target.value)}
-                      className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {ghsCodes.map((ghsCode) => (
-                        <option key={ghsCode} value={ghsCode}>
-                          {ghsCode}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                {/* <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">GHS:</label>
+                  <select
+                    value={ghsFilter}
+                    onChange={(e) => setGhsFilter(e.target.value)}
+                    className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {ghsCodes.map((ghsCode) => (
+                      <option key={ghsCode} value={ghsCode}>
+                        {ghsCode}
+                      </option>
+                    ))}
+                  </select>
+                </div> */}
               </div>
             </div>
           </div>
@@ -2149,10 +1876,7 @@ const RawMaterials = () => {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
-                {isGhsChecked && !isDgChecked ? 'Approve GHS Selected' :
-                 !isGhsChecked && isDgChecked ? 'Approve DG Selected' :
-                 isGhsChecked && isDgChecked ? 'Approve Selected' :
-                 'Approve Selected'}
+                Approve Selected
               </button>
               <button
                 onClick={handleBulkReject}
@@ -2161,10 +1885,7 @@ const RawMaterials = () => {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-                {isGhsChecked && !isDgChecked ? 'Reject GHS Selected' :
-                 !isGhsChecked && isDgChecked ? 'Reject DG Selected' :
-                 isGhsChecked && isDgChecked ? 'Reject Selected' :
-                 'Reject Selected'}
+                Reject Selected
               </button>
             </div>
           )}
@@ -2327,32 +2048,18 @@ const RawMaterials = () => {
                     {selectedRecord.hazardousWaste ? 'Yes' : 'No'}
                   </span>
                 </div>
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Status</p>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-gray-600 w-6">GHS:</span>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                        selectedRecord.GHSStatus === 'Approved' ? 'bg-green-100 text-green-800 border border-green-200' :
-                        selectedRecord.GHSStatus === 'Rejected' ? 'bg-red-100 text-red-800 border border-red-200' :
-                        'bg-yellow-100 text-yellow-800 border border-yellow-200'
-                      }`}>
-                        {selectedRecord.GHSStatus || 'Pending Review'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-gray-600 w-6">DG:</span>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                        selectedRecord.DGStatus === 'Approved' ? 'bg-green-100 text-green-800 border border-green-200' :
-                        selectedRecord.DGStatus === 'Rejected' ? 'bg-red-100 text-red-800 border border-red-200' :
-                        'bg-yellow-100 text-yellow-800 border border-yellow-200'
-                      }`}>
-                        {selectedRecord.DGStatus || 'Pending Review'}
-                      </span>
-                    </div>
+                {selectedRecord.status && (
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Status</p>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                      selectedRecord.status === 'Approved' ? 'bg-green-100 text-green-800 border border-green-200' :
+                      selectedRecord.status === 'Rejected' ? 'bg-red-100 text-red-800 border border-red-200' :
+                      'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                    }`}>
+                      {selectedRecord.status}
+                    </span>
                   </div>
-                </div>
-                
+                )}
               </div>
             </div>
 
@@ -2580,7 +2287,7 @@ const RawMaterials = () => {
       </Modal>
 
       {/* GHS Tooltips */}
-      {sdsRecords.map((record) => {
+      {/* {sdsRecords.map((record) => {
         // Use ghsPictograms directly from the record
         const pictogramArray = record.ghsPictograms || [];
 
@@ -2615,7 +2322,7 @@ const RawMaterials = () => {
             />
           );
         });
-      })}
+      })} */}
 
       {/* Rationale Tooltips */}
       {sdsRecords.map((record) => {
@@ -2674,7 +2381,7 @@ const RawMaterials = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
-        title="Manual Raw Material (?)"
+        title="Manual Extender/Sub-Phase (?)"
         size="md"
       >
         <div className="space-y-4">
@@ -2714,7 +2421,7 @@ const RawMaterials = () => {
               onClick={handleCreateMaterial}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
             >
-              Pull from RDS
+              Pull from WERCS
             </button>
           </div>
         </div>
@@ -2768,5 +2475,5 @@ const RawMaterials = () => {
   );
 };
 
-export default RawMaterials;
+export default Extenders;
 

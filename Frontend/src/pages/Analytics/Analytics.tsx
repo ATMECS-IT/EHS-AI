@@ -4,6 +4,35 @@ import sdsRecordsData from '../../data/sdsRecords.json';
 import extenderRecordsData from '../../data/extenderRecords.json';
 import { GHS_PICTOGRAMS } from '../../components/GHSInfo/GHSInfo';
 
+// DG Definitions - matching Header.tsx
+interface DGDefinition {
+  class: string;
+  name: string;
+  description: string;
+  hazardCharacteristics: string[];
+  examples: string[];
+  packingGroup?: string;
+  labelColor: string;
+}
+
+const DG_DEFINITIONS: DGDefinition[] = [
+  { class: 'Class 1', name: 'Explosives', description: '', hazardCharacteristics: [], examples: [], packingGroup: '', labelColor: '' },
+  { class: 'Class 2', name: 'Gases', description: '', hazardCharacteristics: [], examples: [], packingGroup: '', labelColor: '' },
+  { class: 'Class 3', name: 'Flammable Liquids', description: '', hazardCharacteristics: [], examples: [], packingGroup: '', labelColor: '' },
+  { class: 'Class 4', name: 'Flammable Solids', description: '', hazardCharacteristics: [], examples: [], packingGroup: '', labelColor: '' },
+  { class: 'Class 5', name: 'Oxidizing Substances', description: '', hazardCharacteristics: [], examples: [], packingGroup: '', labelColor: '' },
+  { class: 'Class 6', name: 'Toxic and Infectious Substances', description: '', hazardCharacteristics: [], examples: [], packingGroup: '', labelColor: '' },
+  { class: 'Class 7', name: 'Radioactive Materials', description: '', hazardCharacteristics: [], examples: [], packingGroup: '', labelColor: '' },
+  { class: 'Class 8', name: 'Corrosive Substances', description: '', hazardCharacteristics: [], examples: [], packingGroup: '', labelColor: '' },
+  { class: 'Class 9', name: 'Miscellaneous Dangerous Goods', description: '', hazardCharacteristics: [], examples: [], packingGroup: '', labelColor: '' },
+];
+
+// Helper function to get DG class name from class number
+const getDGClassName = (classStr: string): string => {
+  const dgDef = DG_DEFINITIONS.find(def => def.class === classStr);
+  return dgDef ? dgDef.name : classStr;
+};
+
 interface SDSRecord {
   id: number;
   materialId: string;
@@ -16,8 +45,8 @@ interface SDSRecord {
   GHSStatus?: string;
   DGStatus?: string;
   uploadedDate: string;
-  approvedDate?: string;
-  rejectedDate?: string;
+  'GHS Approval/Rejection Date'?: string;
+  'DG Approval/Rejection Date'?: string;
   sections: {
     section9: {
       flashPoint: string;
@@ -34,16 +63,21 @@ const Analytics = () => {
   useEffect(() => {
     // Load from localStorage if available, otherwise use JSON file
     const savedRecords = localStorage.getItem('sdsRecords');
+    let records: any[] = [];
+    
     if (savedRecords) {
       try {
-        setSdsRecords(JSON.parse(savedRecords));
+        records = JSON.parse(savedRecords);
       } catch (error) {
         console.error('Error loading from localStorage:', error);
-        setSdsRecords(sdsRecordsData as SDSRecord[]);
+        records = sdsRecordsData as any[];
       }
     } else {
-      setSdsRecords(sdsRecordsData as SDSRecord[]);
+      records = sdsRecordsData as any[];
     }
+    
+    // Map JSON fields - they're already in the correct format
+    setSdsRecords(records as SDSRecord[]);
   }, []);
 
   useEffect(() => {
@@ -167,9 +201,10 @@ const Analytics = () => {
       // GHS status
       if (isGhsChecked) {
         const ghsStatus = record.GHSStatus || record.status || 'Pending Review';
-        if (ghsStatus === 'Approved' && record.approvedDate) {
-          // Use approvedDate to determine which month to count this approval
-          const approvedDate = new Date(record.approvedDate);
+        const ghsDate = (record as any)['GHS Approval/Rejection Date'];
+        if (ghsStatus === 'Approved' && ghsDate) {
+          // Use GHS Approval/Rejection Date to determine which month to count this approval
+          const approvedDate = new Date(ghsDate);
           const monthKey = `${approvedDate.getFullYear()}-${String(approvedDate.getMonth() + 1).padStart(2, '0')}`;
           
           // Only count if this month is in the past 6 months
@@ -179,9 +214,9 @@ const Analytics = () => {
               monthData.ghsApproved++;
             }
           }
-        } else if (ghsStatus === 'Rejected' && record.rejectedDate) {
-          // Use rejectedDate to determine which month to count this rejection
-          const rejectedDate = new Date(record.rejectedDate);
+        } else if (ghsStatus === 'Rejected' && ghsDate) {
+          // Use GHS Approval/Rejection Date to determine which month to count this rejection
+          const rejectedDate = new Date(ghsDate);
           const monthKey = `${rejectedDate.getFullYear()}-${String(rejectedDate.getMonth() + 1).padStart(2, '0')}`;
           
           // Only count if this month is in the past 6 months
@@ -197,9 +232,10 @@ const Analytics = () => {
       // DG status
       if (isDgChecked) {
         const dgStatus = record.DGStatus || record.status || 'Pending Review';
-        if (dgStatus === 'Approved' && record.approvedDate) {
-          // Use approvedDate to determine which month to count this approval
-          const approvedDate = new Date(record.approvedDate);
+        const dgDate = (record as any)['DG Approval/Rejection Date'];
+        if (dgStatus === 'Approved' && dgDate) {
+          // Use DG Approval/Rejection Date to determine which month to count this approval
+          const approvedDate = new Date(dgDate);
           const monthKey = `${approvedDate.getFullYear()}-${String(approvedDate.getMonth() + 1).padStart(2, '0')}`;
           
           // Only count if this month is in the past 6 months
@@ -209,9 +245,9 @@ const Analytics = () => {
               monthData.dgApproved++;
             }
           }
-        } else if (dgStatus === 'Rejected' && record.rejectedDate) {
-          // Use rejectedDate to determine which month to count this rejection
-          const rejectedDate = new Date(record.rejectedDate);
+        } else if (dgStatus === 'Rejected' && dgDate) {
+          // Use DG Approval/Rejection Date to determine which month to count this rejection
+          const rejectedDate = new Date(dgDate);
           const monthKey = `${rejectedDate.getFullYear()}-${String(rejectedDate.getMonth() + 1).padStart(2, '0')}`;
           
           // Only count if this month is in the past 6 months
@@ -270,14 +306,18 @@ const Analytics = () => {
       monthMap.set(monthKey, { dgApproved: 0, dgRejected: 0, monthName });
     }
     
-    // Process records and count based on approval/rejection date, not upload date
+    // Process records and count based on approval/rejection date from JSON
     extenderRecords.forEach(record => {
+      const jsonRecord = record as any;
+      // Get the date from "Approve/Reject Date" field in JSON (extenders use this field)
+      const approveRejectDate = jsonRecord['Approve/Reject Date'];
+      
       // DG status (extenders only have DG, no GHS)
       const dgStatus = record.DGStatus || record.status || 'Pending Review';
       
-      if (dgStatus === 'Approved' && record.approvedDate) {
-        // Use approvedDate to determine which month to count this approval
-        const approvedDate = new Date(record.approvedDate);
+      if (dgStatus === 'Approved' && approveRejectDate && approveRejectDate.trim() !== '') {
+        // Use Approve/Reject Date to determine which month to count this approval
+        const approvedDate = new Date(approveRejectDate);
         const monthKey = `${approvedDate.getFullYear()}-${String(approvedDate.getMonth() + 1).padStart(2, '0')}`;
         
         // Only count if this month is in the past 6 months
@@ -287,9 +327,9 @@ const Analytics = () => {
             monthData.dgApproved++;
           }
         }
-      } else if (dgStatus === 'Rejected' && record.rejectedDate) {
-        // Use rejectedDate to determine which month to count this rejection
-        const rejectedDate = new Date(record.rejectedDate);
+      } else if (dgStatus === 'Rejected' && approveRejectDate && approveRejectDate.trim() !== '') {
+        // Use Approve/Reject Date to determine which month to count this rejection
+        const rejectedDate = new Date(approveRejectDate);
         const monthKey = `${rejectedDate.getFullYear()}-${String(rejectedDate.getMonth() + 1).padStart(2, '0')}`;
         
         // Only count if this month is in the past 6 months
@@ -326,23 +366,39 @@ const Analytics = () => {
     ];
   }, [kpiStats]);
 
-  // Calculate Classification Accuracy for Raw Materials and Extenders
+  // Calculate Classification Accuracy for Raw Materials (GHS and DG) and Extenders
   const classificationAccuracy = useMemo(() => {
-    // Raw Materials accuracy
-    const rawTotalReviewed = sdsRecords.filter(r => r.status === 'Approved' || r.status === 'Rejected' || r.status === 'Pending Review').length;
-    const rawApproved = sdsRecords.filter(r => r.status === 'Approved').length;
-    const rawAccuracy = rawTotalReviewed > 0 ? Math.round((rawApproved / rawTotalReviewed) * 100) : 0;
+    // Raw Materials GHS accuracy
+    const rawGHSTotalReviewed = sdsRecords.filter(r => {
+      const ghsStatus = r.GHSStatus || r.status || 'Pending Review';
+      return ghsStatus === 'Approved' || ghsStatus === 'Rejected' || ghsStatus === 'Pending Review';
+    }).length;
+    const rawGHSApproved = sdsRecords.filter(r => (r.GHSStatus || r.status) === 'Approved').length;
+    const rawGHSAccuracy = rawGHSTotalReviewed > 0 ? Math.round((rawGHSApproved / rawGHSTotalReviewed) * 100) : 0;
 
-    // Extenders accuracy
+    // Raw Materials DG accuracy
+    const rawDGTotalReviewed = sdsRecords.filter(r => {
+      const dgStatus = r.DGStatus || r.status || 'Pending Review';
+      return dgStatus === 'Approved' || dgStatus === 'Rejected' || dgStatus === 'Pending Review';
+    }).length;
+    const rawDGApproved = sdsRecords.filter(r => (r.DGStatus || r.status) === 'Approved').length;
+    const rawDGAccuracy = rawDGTotalReviewed > 0 ? Math.round((rawDGApproved / rawDGTotalReviewed) * 100) : 0;
+
+    // Extenders accuracy (DG only)
     const extTotalReviewed = extenderRecords.filter(r => r.status === 'Approved' || r.status === 'Rejected' || r.status === 'Pending Review').length;
     const extApproved = extenderRecords.filter(r => r.status === 'Approved').length;
     const extAccuracy = extTotalReviewed > 0 ? Math.round((extApproved / extTotalReviewed) * 100) : 0;
 
     return {
-      rawMaterials: {
-        accuracy: rawAccuracy,
-        approved: rawApproved,
-        total: rawTotalReviewed
+      rawMaterialsGHS: {
+        accuracy: rawGHSAccuracy,
+        approved: rawGHSApproved,
+        total: rawGHSTotalReviewed
+      },
+      rawMaterialsDG: {
+        accuracy: rawDGAccuracy,
+        approved: rawDGApproved,
+        total: rawDGTotalReviewed
       },
       extenders: {
         accuracy: extAccuracy,
@@ -436,7 +492,12 @@ const Analytics = () => {
     });
 
     return Array.from(ghsMap.entries())
-      .map(([code, count]) => ({ code, count }))
+      .map(([code, count]) => {
+        // Get the name from GHS_PICTOGRAMS, fallback to code if not found
+        const ghsInfo = GHS_PICTOGRAMS[code];
+        const name = ghsInfo ? ghsInfo.name : code;
+        return { code, name, count };
+      })
       .sort((a, b) => b.count - a.count);
   }, [sdsRecords]);
 
@@ -497,9 +558,64 @@ const Analytics = () => {
     });
     
     return Array.from(classMap.entries())
-      .map(([name, count]) => ({ name, count }))
+      .map(([classStr, count]) => {
+        // Get the name from DG_DEFINITIONS, fallback to classStr if not found
+        const name = getDGClassName(classStr);
+        return { class: classStr, name, count };
+      })
       .sort((a, b) => b.count - a.count);
   }, [sdsRecords]);
+
+  // Prepare data for Extenders DG Class Frequency
+  const extenderDgClassFrequency = useMemo(() => {
+    const classMap = new Map<string, number>();
+    
+    extenderRecords.forEach(record => {
+      let dgClass = '';
+      const dgCode = record.aiRecommendedDGCode || '';
+      
+      // Try to extract Class number (e.g., "Class 3", "Class 9")
+      const classMatch = dgCode.match(/Class\s+([\d.]+)/);
+      if (classMatch) {
+        dgClass = `Class ${classMatch[1]}`;
+      } else {
+        // Handle other formats
+        if (dgCode.toLowerCase().includes('not regulated') || 
+            dgCode.toLowerCase().includes('not dangerous')) {
+          dgClass = 'Not Regulated';
+        } else if (dgCode.includes('NA1993') || 
+                   dgCode.toLowerCase().includes('combustible liquid')) {
+          dgClass = 'Combustible Liquid (NA1993)';
+        } else if (dgCode.includes('UN') && dgCode.includes('Class')) {
+          // Extract class from formats like "UN3082 - Class 9"
+          const altMatch = dgCode.match(/Class\s+([\d.]+)/);
+          if (altMatch) {
+            dgClass = `Class ${altMatch[1]}`;
+          } else {
+            // If we have UN number but no class, use the UN number
+            const unMatch = dgCode.match(/UN\d+/);
+            dgClass = unMatch ? unMatch[0] : 'Other';
+          }
+        } else if (dgCode.trim() === '') {
+          dgClass = 'Not Specified';
+        } else {
+          dgClass = 'Other';
+        }
+      }
+      
+      if (dgClass) {
+        classMap.set(dgClass, (classMap.get(dgClass) || 0) + 1);
+      }
+    });
+    
+    return Array.from(classMap.entries())
+      .map(([classStr, count]) => {
+        // Get the name from DG_DEFINITIONS, fallback to classStr if not found
+        const name = getDGClassName(classStr);
+        return { class: classStr, name, count };
+      })
+      .sort((a, b) => b.count - a.count);
+  }, [extenderRecords]);
  
   
  
@@ -520,15 +636,15 @@ const Analytics = () => {
                 <div className="mt-2 flex items-end gap-4">
                   <div className="flex flex-col">
                     <p className="text-3xl font-bold text-gray-900">{stat.ghsValue}</p>
-                    <span className="text-xs font-medium text-gray-500 mt-1">GHS</span>
+                    <span className="text-xs font-medium text-gray-500 mt-1">RAW - GHS</span>
                   </div>
                   <div className="flex flex-col">
                     <p className="text-3xl font-bold text-gray-900">{stat.dgValue}</p>
-                    <span className="text-xs font-medium text-gray-500 mt-1">DG</span>
+                    <span className="text-xs font-medium text-gray-500 mt-1">RAW - DG</span>
                   </div>
                   <div className="flex flex-col">
                     <p className="text-3xl font-bold text-gray-900">{stat.extValue}</p>
-                    <span className="text-xs font-medium text-gray-500 mt-1">Extenders</span>
+                    <span className="text-xs font-medium text-gray-500 mt-1">Extenders - DG</span>
                   </div>
                 </div>
               </div>
@@ -541,15 +657,20 @@ const Analytics = () => {
       {/* Classification Accuracy Card */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Classification Accuracy</h3>
-        <div className="flex items-center justify-center gap-12">
+        <div className="flex items-center justify-center gap-8">
           <div className="text-center">
-            <div className="text-5xl font-bold text-gray-900 mb-2">{classificationAccuracy.rawMaterials.accuracy}%</div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Raw Materials</p>
-            <p className="text-xs text-gray-500">{classificationAccuracy.rawMaterials.approved} approved out of {classificationAccuracy.rawMaterials.total} total</p>
+            <div className="text-4xl font-bold text-gray-900 mb-2">{classificationAccuracy.rawMaterialsGHS.accuracy}%</div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Raw Materials - GHS</p>
+            <p className="text-xs text-gray-500">{classificationAccuracy.rawMaterialsGHS.approved} approved out of {classificationAccuracy.rawMaterialsGHS.total} total</p>
           </div>
           <div className="text-center">
-            <div className="text-5xl font-bold text-gray-900 mb-2">{classificationAccuracy.extenders.accuracy}%</div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Extenders</p>
+            <div className="text-4xl font-bold text-gray-900 mb-2">{classificationAccuracy.rawMaterialsDG.accuracy}%</div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Raw Materials - DG</p>
+            <p className="text-xs text-gray-500">{classificationAccuracy.rawMaterialsDG.approved} approved out of {classificationAccuracy.rawMaterialsDG.total} total</p>
+          </div>
+          <div className="text-center">
+            <div className="text-4xl font-bold text-gray-900 mb-2">{classificationAccuracy.extenders.accuracy}%</div>
+            <p className="text-sm font-medium text-gray-600 mb-1">Extenders - DG</p>
             <p className="text-xs text-gray-500">{classificationAccuracy.extenders.approved} approved out of {classificationAccuracy.extenders.total} total</p>
           </div>
         </div>
@@ -599,14 +720,14 @@ const Analytics = () => {
               <Legend />
               {isGhsChecked && (
                 <>
-                  <Bar dataKey="Approved - GHS" fill="#10b981" name="Approved - GHS" />
-                  <Bar dataKey="Rejected - GHS" fill="#ef4444" name="Rejected - GHS" />
+                  <Bar dataKey="Approved - GHS" fill="#58D68D" name="Approved - GHS" />
+                  <Bar dataKey="Rejected - GHS" fill="#EC7063" name="Rejected - GHS" />
                 </>
               )}
               {isDgChecked && (
                 <>
-                  <Bar dataKey="Approved - DG" fill="#22c55e" name="Approved - DG" />
-                  <Bar dataKey="Rejected - DG" fill="#f87171" name="Rejected - DG" />
+                  <Bar dataKey="Approved - DG" fill="#52BE80" name="Approved - DG" />
+                  <Bar dataKey="Rejected - DG" fill="#CD6155" name="Rejected - DG" />
                 </>
               )}
             </BarChart>
@@ -630,8 +751,8 @@ const Analytics = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="Approved - DG" fill="#22c55e" name="Approved - DG" />
-              <Bar dataKey="Rejected - DG" fill="#f87171" name="Rejected - DG" />
+              <Bar dataKey="Approved - DG" fill="#52BE80" name="Approved - DG" />
+              <Bar dataKey="Rejected - DG" fill="#CD6155" name="Rejected - DG" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -666,41 +787,7 @@ const Analytics = () => {
       {/* Flashpoint Distribution and GHS/DG Class Frequency */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  
-        {/* DG Class Frequency */}
-        <div className="bg-white rounded-lg shadow p-6">
-             <h3 className="text-lg font-semibold text-gray-900 mb-4">DG Class Frequency for Raw Materials</h3>
-             <ResponsiveContainer width="100%" height={300}>
-             <BarChart data={dgClassFrequency} margin={{ bottom: 50 }}>
-                 <CartesianGrid strokeDasharray="3 3" />
-                 <XAxis 
-                   dataKey="name" 
-                   angle={-45}
-                   textAnchor="end"
-                   
-                   interval={0}
-                   tick={{ fontSize: 11 }}
-                   tickFormatter={(value) => {
-                     // Truncate long text with ellipses
-                     const maxLength = 15;
-                     if (value.length > maxLength) {
-                       return value.substring(0, maxLength) + '...';
-                     }
-                     return value;
-                   }}
-                 />
-                 <YAxis />
-                 <Tooltip 
-                   formatter={(value: any) => value}
-                   labelFormatter={(label) => {
-                     // Show full text in tooltip
-                     return label;
-                   }}
-                 />
-                 <Bar dataKey="count" fill="#f59e0b" name="Frequency" />
-             </BarChart>
-             </ResponsiveContainer>
-         </div>
-
+    
         {/* GHS Class Frequency */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">GHS Class Frequency for Raw Materials</h3>
@@ -708,7 +795,7 @@ const Analytics = () => {
             <BarChart data={ghsFrequency} margin={{ bottom: 50 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
-              dataKey="code" 
+              dataKey="name" 
                    angle={-45}
                    textAnchor="end"
                    
@@ -724,16 +811,80 @@ const Analytics = () => {
                    }} />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="count" fill="#8b5cf6" name="Frequency" />
+              <Bar dataKey="count" fill="#EB984E" name="Frequency" />
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-              {/* Flashpoint Distribution */}
-              <div className="bg-white rounded-lg shadow p-6">
+        {/* DG Class Frequency */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">DG Class Frequency for Raw Materials</h3>
+          <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={dgClassFrequency} margin={{ bottom: 50 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45}
+                textAnchor="end"
+                
+                interval={0}
+                tick={{ fontSize: 11 }}
+                tickFormatter={(value) => {
+                  // Truncate long text with ellipses
+                  const maxLength = 15;
+                  if (value.length > maxLength) {
+                    return value.substring(0, maxLength) + '...';
+                  }
+                  return value;
+                }}
+              />
+              <YAxis />
+              <Tooltip 
+                formatter={(value: any) => value}
+                labelFormatter={(label) => {
+                  // Show full text in tooltip
+                  return label;
+                }}
+              />
+              <Bar dataKey="count" fill="#A569BD" name="Frequency" />
+          </BarChart>
+          </ResponsiveContainer>
+        </div>
+        {/* DG Class Frequency for Extenders */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">DG Class Frequency for Extenders</h3>
+          <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={extenderDgClassFrequency} margin={{ bottom: 50 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="name" 
+                angle={-45}
+                textAnchor="end"
+                
+                interval={0}
+                tick={{ fontSize: 11 }}
+                tickFormatter={(value) => {
+                  // Truncate long text with ellipses
+                  const maxLength = 15;
+                  if (value.length > maxLength) {
+                    return value.substring(0, maxLength) + '...';
+                  }
+                  return value;
+                }}
+              />
+              <YAxis />
+              <Tooltip 
+                formatter={(value: any) => value}
+                labelFormatter={(label) => {
+                  // Show full text in tooltip
+                  return label;
+                }}
+              />
+              <Bar dataKey="count" fill="#45B39D" name="Frequency" />
+          </BarChart>
+          </ResponsiveContainer>
+        </div>
+{/* Flashpoint Distribution */}
+<div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Flashpoint Distribution for Raw Materials</h3>
                 <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={flashpointDistribution} layout="vertical">
@@ -741,10 +892,15 @@ const Analytics = () => {
                     <XAxis type="number" />
                     <YAxis dataKey="range" type="category" width={80} reversed />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" name="Count" />
+                    <Bar dataKey="count" fill="#5D6D7E" name="Count" />
                     </BarChart>
                 </ResponsiveContainer>
                 </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+              
  {/* GHS Pictogram Summary */}
  <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">GHS Pictogram Summary for Raw Materials</h3>

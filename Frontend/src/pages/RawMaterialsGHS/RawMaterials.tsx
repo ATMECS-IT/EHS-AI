@@ -1099,19 +1099,31 @@ const RawMaterials = () => {
       key: 'rationaleSummary',
       header: 'Rationale',
       render: (record: SDSRecord) => {
-        const truncatedText = record.rationaleSummary.length > 16
-          ? `${record.rationaleSummary.substring(0, 16)}...` 
-          : record.rationaleSummary;
-        
         const tooltipId = `rationale-${record.id}`;
-        
+
+        const renderLine = (label: 'GHS' | 'DG', text: string) => {
+          const safeText = (text || 'N/A').trim() || 'N/A';
+          const truncated = safeText.length > 16 ? `${safeText.substring(0, 16)}...` : safeText;
+          const showTooltip = safeText !== 'N/A' && safeText.length > 16;
+
+          return (
+            <div key={label} className="flex items-start gap-1">
+              <span className="text-[10px] font-semibold text-gray-500 mt-0.5 w-7">{label}:</span>
+              <span
+                className="cursor-help truncate block max-w-xs"
+                data-tooltip-id={tooltipId}
+                data-tooltip-content={showTooltip ? safeText : ''}
+              >
+                {truncated}
+              </span>
+            </div>
+          );
+        };
+
         return (
-          <div 
-            className="truncate cursor-help"
-            data-tooltip-id={tooltipId}
-            data-tooltip-content={record.rationaleSummary.length > 16 ? record.rationaleSummary : ''}
-          >
-            {truncatedText}
+          <div className="flex flex-col gap-1">
+            {isGhsChecked && renderLine('GHS', record.ghsRationale || 'N/A')}
+            {isDgChecked && renderLine('DG', record.dgRationale || 'N/A')}
           </div>
         );
       },

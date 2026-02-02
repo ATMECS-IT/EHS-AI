@@ -655,7 +655,7 @@ const Analytics = () => {
       </div>
 
       {/* Classification Accuracy Card */}
-      <div className="bg-white rounded-lg shadow p-6">
+      {/* <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Classification Accuracy</h3>
         <div className="flex items-center justify-center gap-8">
           <div className="text-center">
@@ -674,7 +674,7 @@ const Analytics = () => {
             <p className="text-xs text-gray-500">{classificationAccuracy.extenders.approved} approved out of {classificationAccuracy.extenders.total} total</p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

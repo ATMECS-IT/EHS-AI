@@ -977,19 +977,24 @@ const Extenders = () => {
       key: 'rationaleSummary',
       header: 'Rationale',
       render: (record: SDSRecord) => {
-        const truncatedText = record.rationaleSummary.length > 25 
-          ? `${record.rationaleSummary.substring(0, 25)}...` 
-          : record.rationaleSummary;
-        
+        const rationaleText = (record.dgRationale || 'N/A').trim() || 'N/A';
+        const truncatedText = rationaleText.length > 25
+          ? `${rationaleText.substring(0, 25)}...`
+          : rationaleText;
+
         const tooltipId = `rationale-${record.id}`;
-        
+        const showTooltip = rationaleText !== 'N/A' && rationaleText.length > 25;
+
         return (
-          <div 
-            className="truncate cursor-help"
-            data-tooltip-id={tooltipId}
-            data-tooltip-content={record.rationaleSummary.length > 25 ? record.rationaleSummary : ''}
-          >
-            {truncatedText}
+          <div className="flex items-start gap-1">
+            <span className="text-[10px] font-semibold text-gray-500 mt-0.5">DG:</span>
+            <span
+              className="cursor-help truncate block max-w-xs"
+              data-tooltip-id={tooltipId}
+              data-tooltip-content={showTooltip ? rationaleText : ''}
+            >
+              {truncatedText}
+            </span>
           </div>
         );
       },
@@ -1612,19 +1617,6 @@ const Extenders = () => {
         changeColor: 'text-red-600' 
       }
     ];
-  }, [sdsRecords]);
-
-  // Extract unique DG classes from records
-  const dgClasses = useMemo(() => {
-    const classes = new Set<string>();
-    sdsRecords.forEach(record => {
-      // Extract class from aiRecommendedDGCode (e.g., "UN1090 - Class 3" -> "Class 3")
-      const match = record.aiRecommendedDGCode.match(/Class\s+[\d.]+/);
-      if (match) {
-        classes.add(match[0]);
-      }
-    });
-    return ['All', ...Array.from(classes).sort()];
   }, [sdsRecords]);
 
   // Extract unique GHS codes from records
@@ -2421,7 +2413,7 @@ const Extenders = () => {
               onClick={handleCreateMaterial}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
             >
-              Pull from WERCS
+              Pull from RDS or WERCS
             </button>
           </div>
         </div>
